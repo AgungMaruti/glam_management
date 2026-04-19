@@ -1,0 +1,351 @@
+'use client'
+export const dynamic = 'force-dynamic'
+
+import { useEffect, useState } from 'react'
+import { TrendingUp, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, ShoppingBag, Wallet, Edit2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { formatRupiah } from '@/lib/utils'
+import { Cashflow, Variant } from '@/types'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
+
+type Period = 'daily' | 'weekly' | 'monthly' | 'all'
+
+const INCOME_CATS = ['Penjualan', 'Reseller', 'Dropship', 'Lainnya']
+const EXPENSE_CATS = ['Produksi', 'Gaji Karyawan', 'Marketing', 'Packaging', 'Ongkir', 'Operasional', 'Lainnya']
+const defaultForm = { type: 'income' as 'income' | 'expense', category: '', amount: '', description: '', transaction_date: new Date().toISOString().slice(0, 10) }
+
+export default function CashflowPage() {
+  const [cashflows, setCashflows] = useState<Cashflow[]>([])
+  const [variants, setVariants] = useState<Variant[]>([])
+  const [period, setPeriod] = useState<Period>('monthly')
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [showSaleModal, setShowSaleModal] = useState(false)
+  const [showSaldoModal, setShowSaldoModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState(defaultForm)
+  const [saleForm, setSaleForm] = useState({ variant_id: '', quantity: '', unit_price: '', notes: '' })
+  const [saldoAwal, setSaldoAwal] = useState<Cashflow | null>(null)
+  const [saldoInput, setSaldoInput] = useState('')
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    const [cf, vr] = await Promise.all([
+      supabase.from('cashflow').select('*').order('transaction_date', { ascending: false }),
+      supabase.from('variants').select('*').order('name'),
+    ])
+    const all = cf.data || []
+    setCashflows(all)
+    setVariants(vr.data || [])
+    const sa = all.find(c => c.category === 'Saldo Awal')
+    setSaldoAwal(sa || null)
+    setLoading(false)
+  }
+
+  function filterPeriod(items: Cashflow[]) {
+    // Exclude saldo awal from period filter (it's always included in running balance)
+    const txs = items.filter(c => c.category !== 'Saldo Awal')
+    const now = new Date()
+    if (period === 'all') return txs
+    return txs.filter(c => {
+      const d = new Date(c.transaction_date)
+      if (period === 'daily') return d.toDateString() === now.toDateString()
+      if (period === 'weekly') { const w = new Date(now); w.setDate(now.getDate() - 7); return d >= w }
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+  }
+
+  const filtered = filterPeriod(cashflows)
+  const saldoAwalAmount = saldoAwal?.amount || 0
+
+  // Running balance = saldo awal + all-time income - all-time expense
+  const allTxs = cashflows.filter(c => c.category !== 'Saldo Awal')
+  const allIncome = allTxs.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
+  const allExpense = allTxs.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
+  const currentBalance = saldoAwalAmount + allIncome - allExpense
+
+  // Period stats (for display only)
+  const periodIncome = filtered.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
+  const periodExpense = filtered.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
+
+  async function saveSaldoAwal() {
+    if (!saldoInput) return
+    setSaving(true)
+    const amount = parseFloat(saldoInput)
+    if (saldoAwal) {
+      await supabase.from('cashflow').update({ amount, description: 'Saldo rekening awal' }).eq('id', saldoAwal.id)
+    } else {
+      await supabase.from('cashflow').insert({
+        type: 'income', category: 'Saldo Awal', amount,
+        description: 'Saldo rekening awal',
+        transaction_date: new Date(0).toISOString(), // epoch so it's always first
+      })
+    }
+    setSaldoInput(''); setShowSaldoModal(false); setSaving(false); load()
+  }
+
+  async function saveCashflow() {
+    if (!form.category || !form.amount) return
+    setSaving(true)
+    await supabase.from('cashflow').insert({ type: form.type, category: form.category, amount: parseFloat(form.amount), description: form.description, transaction_date: form.transaction_date })
+    setForm(defaultForm); setShowModal(false); setSaving(false); load()
+  }
+
+  async function saveSale() {
+    if (!saleForm.variant_id || !saleForm.quantity || !saleForm.unit_price) return
+    setSaving(true)
+    const qty = parseInt(saleForm.quantity)
+    const price = parseFloat(saleForm.unit_price)
+    const total = qty * price
+    const v = variants.find(v => v.id === saleForm.variant_id)
+    if (!v) { setSaving(false); return }
+    if (v.stock < qty) { alert(`Stok tidak cukup! Tersedia: ${v.stock} pcs`); setSaving(false); return }
+    await supabase.from('sales').insert({ variant_id: saleForm.variant_id, quantity: qty, unit_price: price, total_amount: total, notes: saleForm.notes })
+    await supabase.from('variants').update({ stock: v.stock - qty }).eq('id', saleForm.variant_id)
+    await supabase.from('cashflow').insert({ type: 'income', category: 'Penjualan', amount: total, description: `Jual ${qty} pcs ${v.name} @ ${formatRupiah(price)}`, transaction_date: new Date().toISOString() })
+    setSaleForm({ variant_id: '', quantity: '', unit_price: '', notes: '' }); setShowSaleModal(false); setSaving(false); load()
+  }
+
+  async function deleteCashflow(id: string) {
+    await supabase.from('cashflow').delete().eq('id', id); load()
+  }
+
+  const periods: { key: Period; label: string }[] = [
+    { key: 'daily', label: 'Hari Ini' },
+    { key: 'weekly', label: 'Minggu Ini' },
+    { key: 'monthly', label: 'Bulan Ini' },
+    { key: 'all', label: 'Semua' },
+  ]
+
+  if (loading) return <Spinner />
+
+  return (
+    <div className="page-sections">
+      <PageHeader title="Cashflow" subtitle="Pantau arus keuangan bisnis kamu" icon={TrendingUp}
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span className="show-sm"><Button variant="outline" size="sm" icon={ShoppingBag} onClick={() => setShowSaleModal(true)}>Catat Penjualan</Button></span>
+            <Button icon={Plus} size="sm" onClick={() => setShowModal(true)}>Transaksi</Button>
+          </div>
+        }
+      />
+
+      {/* Mobile sale button */}
+      <div className="hide-sm" style={{ width: '100%' }}>
+        <Button variant="outline" size="sm" icon={ShoppingBag} onClick={() => setShowSaleModal(true)} style={{ width: '100%', justifyContent: 'center' }}>Catat Penjualan</Button>
+      </div>
+
+      {/* Saldo Rekening Card */}
+      <div className="card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', background: currentBalance >= 0 ? '#FAFBFF' : '#FFF5F5', borderColor: currentBalance >= 0 ? '#C7D2FE' : '#FECACA' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: currentBalance >= 0 ? '#EEF2FF' : '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Wallet size={20} color={currentBalance >= 0 ? '#6366F1' : '#DC2626'} />
+          </div>
+          <div>
+            <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 2 }}>
+              Saldo Rekening Saat Ini
+              {saldoAwal && <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 6 }}>· modal awal {formatRupiah(saldoAwalAmount)}</span>}
+            </p>
+            <p style={{ fontSize: 24, fontWeight: 800, color: currentBalance >= 0 ? '#4338CA' : '#DC2626', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              {formatRupiah(currentBalance)}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => { setSaldoInput(saldoAwal?.amount.toString() || ''); setShowSaldoModal(true) }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#E0E7FF'}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'}
+        >
+          <Edit2 size={12} />
+          {saldoAwal ? 'Edit Saldo Awal' : 'Set Saldo Awal'}
+        </button>
+      </div>
+
+      {/* Period tabs */}
+      <div className="tab-bar">
+        {periods.map(p => (
+          <button key={p.key} className={`tab-item ${period === p.key ? 'active' : ''}`} onClick={() => setPeriod(p.key)}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Summary cards */}
+      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        {[
+          { label: `Pemasukan${period !== 'all' ? ' Periode Ini' : ''}`, value: periodIncome, icon: ArrowUpCircle, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+          { label: `Pengeluaran${period !== 'all' ? ' Periode Ini' : ''}`, value: periodExpense, icon: ArrowDownCircle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+          { label: `Selisih${period !== 'all' ? ' Periode Ini' : ''}`, value: periodIncome - periodExpense, icon: TrendingUp, color: (periodIncome - periodExpense) >= 0 ? '#4338CA' : '#DC2626', bg: (periodIncome - periodExpense) >= 0 ? '#EEF2FF' : '#FEF2F2', border: (periodIncome - periodExpense) >= 0 ? '#C7D2FE' : '#FECACA' },
+        ].map(c => {
+          const Icon = c.icon
+          return (
+            <div key={c.label} className="card" style={{ padding: '14px 16px', borderColor: c.border }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={15} color={c.color} />
+                </div>
+                <p style={{ fontSize: 12, color: '#6B7280' }}>{c.label}</p>
+              </div>
+              <p style={{ fontSize: 20, fontWeight: 800, color: c.color, letterSpacing: '-0.02em' }}>{formatRupiah(c.value)}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Transactions */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Riwayat Transaksi</h3>
+          <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>{filtered.length} transaksi</span>
+        </div>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: '#9CA3AF' }}>Belum ada transaksi di periode ini</p>
+          </div>
+        ) : (
+          <div>
+            {filtered.map((c, i) => (
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px',
+                borderBottom: i < filtered.length - 1 ? '1px solid #F5F3EF' : 'none',
+                transition: 'background .15s',
+              }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#FAFAF8'}
+                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: c.type === 'income' ? '#F0FDF4' : '#FEF2F2' }}>
+                  {c.type === 'income'
+                    ? <ArrowUpCircle size={16} color="#16A34A" />
+                    : <ArrowDownCircle size={16} color="#DC2626" />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{c.category}</p>
+                  {c.description && <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.description}</p>}
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: c.type === 'income' ? '#16A34A' : '#DC2626' }}>
+                    {c.type === 'income' ? '+' : '-'}{formatRupiah(c.amount)}
+                  </p>
+                  <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{new Date(c.transaction_date).toLocaleDateString('id-ID')}</p>
+                </div>
+                <button onClick={() => deleteCashflow(c.id)}
+                  style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#E5E2DC', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#E5E2DC' }}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Set Saldo Awal Modal */}
+      <Modal open={showSaldoModal} onClose={() => setShowSaldoModal(false)} title={saldoAwal ? 'Edit Saldo Awal' : 'Set Saldo Awal'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #C7D2FE' }}>
+            <p style={{ fontSize: 13, color: '#3730A3', fontWeight: 600, marginBottom: 4 }}>Apa itu Saldo Awal?</p>
+            <p style={{ fontSize: 12, color: '#4338CA', lineHeight: 1.5 }}>
+              Jumlah uang yang ada di rekening/kas kamu sebelum mulai mencatat di aplikasi ini. Saldo rekening = saldo awal + semua pemasukan − semua pengeluaran.
+            </p>
+          </div>
+          <div>
+            <label style={lbl}>Jumlah Saldo Awal (Rp) *</label>
+            <input
+              className="field"
+              type="number"
+              placeholder="Contoh: 500000"
+              value={saldoInput}
+              onChange={e => setSaldoInput(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {saldoInput && (
+            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1.5px solid #BBF7D0', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Saldo rekening setelah set</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: '#16A34A', letterSpacing: '-0.02em' }}>
+                {formatRupiah(parseFloat(saldoInput || '0') + allIncome - allExpense)}
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+            <Button variant="ghost" onClick={() => setShowSaldoModal(false)} style={{ flex: 1 }}>Batal</Button>
+            <Button onClick={saveSaldoAwal} loading={saving} style={{ flex: 1 }}>Simpan</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Cashflow Modal */}
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Tambah Transaksi">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1.5px solid #E5E2DC' }}>
+            {(['income', 'expense'] as const).map(t => (
+              <button key={t} onClick={() => setForm(f => ({ ...f, type: t, category: '' }))}
+                style={{
+                  flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all .15s',
+                  background: form.type === t ? (t === 'income' ? '#16A34A' : '#DC2626') : '#F9F8F4',
+                  color: form.type === t ? '#fff' : '#9CA3AF',
+                }}>
+                {t === 'income' ? '↑ Pemasukan' : '↓ Pengeluaran'}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label style={lbl}>Kategori *</label>
+            <select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <option value="">-- Pilih Kategori --</option>
+              {(form.type === 'income' ? INCOME_CATS : EXPENSE_CATS).map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label style={lbl}>Jumlah (Rp) *</label><input className="field" type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+            <div><label style={lbl}>Tanggal</label><input className="field" type="date" value={form.transaction_date} onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))} /></div>
+          </div>
+          <div><label style={lbl}>Keterangan</label><input className="field" placeholder="Opsional..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+          <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+            <Button variant="ghost" onClick={() => setShowModal(false)} style={{ flex: 1 }}>Batal</Button>
+            <Button onClick={saveCashflow} loading={saving} style={{ flex: 1 }}>Simpan</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Sale Modal */}
+      <Modal open={showSaleModal} onClose={() => setShowSaleModal(false)} title="Catat Penjualan">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div><label style={lbl}>Varian yang Dijual *</label>
+            <select className="field" value={saleForm.variant_id}
+              onChange={e => { const v = variants.find(v => v.id === e.target.value); setSaleForm(f => ({ ...f, variant_id: e.target.value, unit_price: v?.selling_price.toString() || '' })) }}>
+              <option value="">-- Pilih Varian --</option>
+              {variants.map(v => <option key={v.id} value={v.id}>{v.name} — stok: {v.stock} pcs</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label style={lbl}>Jumlah (pcs) *</label><input className="field" type="number" placeholder="1" value={saleForm.quantity} onChange={e => setSaleForm(f => ({ ...f, quantity: e.target.value }))} /></div>
+            <div><label style={lbl}>Harga/pcs (Rp) *</label><input className="field" type="number" placeholder="0" value={saleForm.unit_price} onChange={e => setSaleForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
+          </div>
+          {saleForm.quantity && saleForm.unit_price && (
+            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 16px', textAlign: 'center', border: '1.5px solid #BBF7D0' }}>
+              <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Total Penjualan</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: '#16A34A', letterSpacing: '-0.02em' }}>{formatRupiah(parseInt(saleForm.quantity || '0') * parseFloat(saleForm.unit_price || '0'))}</p>
+            </div>
+          )}
+          <div><label style={lbl}>Catatan</label><input className="field" placeholder="Opsional..." value={saleForm.notes} onChange={e => setSaleForm(f => ({ ...f, notes: e.target.value }))} /></div>
+          <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+            <Button variant="ghost" onClick={() => setShowSaleModal(false)} style={{ flex: 1 }}>Batal</Button>
+            <Button onClick={saveSale} loading={saving} style={{ flex: 1 }}>Simpan Penjualan</Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
+const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }
+
+function Spinner() {
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}><div style={{ width: 28, height: 28, border: '2.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /></div>
+}

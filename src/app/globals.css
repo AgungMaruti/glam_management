@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import "tailwindcss";
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sidebar-w: 256px;
+  --topbar-h: 60px;
+  --bg: #F5F4F0;
+  --card: #FFFFFF;
+  --border: #E5E2DC;
+  --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+html { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: #111827;
+  font-family: var(--font);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCROLLBAR ──────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CCC9C3; border-radius: 99px; }
+
+/* ── LAYOUT ─────────────────────────────────── */
+.app-main {
+  padding-top: var(--topbar-h);
+  min-height: 100vh;
+}
+@media (min-width: 1024px) {
+  .app-main { padding-top: 0; margin-left: var(--sidebar-w); }
+}
+
+.page-wrap {
+  padding: 16px;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+@media (min-width: 640px)  { .page-wrap { padding: 20px; } }
+@media (min-width: 1024px) { .page-wrap { padding: 28px 32px; } }
+
+.page-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+@media (min-width: 768px) { .page-sections { gap: 24px; } }
+
+/* ── CARD ────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(17,24,39,.05), 0 4px 12px rgba(17,24,39,.04);
+}
+
+/* ── FORM ELEMENTS ───────────────────────────── */
+.field {
+  background: #F7F6F2;
+  border: 1.5px solid var(--border);
+  color: #111827;
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  font-size: 14px;
+  font-family: var(--font);
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field:focus {
+  border-color: #6366F1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+}
+.field::placeholder { color: #9CA3AF; }
+
+/* select arrow */
+select.field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* ── BADGE ───────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: .01em;
+}
+
+/* ── TABS ────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  background: #EDEAE4;
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all .15s;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+}
+.tab-item:hover { color: #374151; background: rgba(255,255,255,.5); }
+.tab-item.active {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+}
+
+/* ── DIVIDER ─────────────────────────────────── */
+hr.divider { border: none; border-top: 1.5px solid var(--border); }
+
+/* ── ANIMATION ───────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── SHOW/HIDE HELPERS (no inline style conflict) ── */
+.only-desktop { display: none; }
+@media (min-width: 1024px) { .only-desktop { display: flex; } }
+
+.only-mobile { display: flex; }
+@media (min-width: 1024px) { .only-mobile { display: none; } }
+
+.hide-sm { display: flex; }
+@media (min-width: 640px) { .hide-sm { display: none; } }
+
+.show-sm { display: none; }
+@media (min-width: 640px) { .show-sm { display: inline-flex; } }
+
+/* flex variant (used when parent needs display:flex on sm+) */
+.show-sm-flex { display: none; }
+@media (min-width: 640px) { .show-sm-flex { display: flex; } }
+
+/* ── RESPONSIVE GRID HELPERS ─────────────────────── */
+/* 2-col → 4-col at xl (stats) */
+.stats-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 1280px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* 1-col → 2-col at md */
+.two-col-md { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .two-col-md { grid-template-columns: 1fr 1fr; } }
+
+/* 1-col → 2-col at xl */
+.two-col-xl { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 1280px) { .two-col-xl { grid-template-columns: 1fr 1fr; } }
+
+/* 2-col → 4-col at md */
+.four-col-md { display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 768px) { .four-col-md { grid-template-columns: repeat(4, 1fr); } }
+
+/* ── MODAL RESPONSIVE ────────────────────────────── */
+.modal-wrap { align-items: flex-end; padding: 0; }
+@media (min-width: 640px) { .modal-wrap { align-items: center; padding: 16px; } }
+
+.modal-panel { border-radius: 16px 16px 0 0; }
+@media (min-width: 640px) { .modal-panel { border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.18); } }
