@@ -37,19 +37,19 @@ body {
 }
 
 .page-wrap {
-  padding: 16px;
+  padding: 12px;
   max-width: 1360px;
   margin: 0 auto;
 }
-@media (min-width: 640px)  { .page-wrap { padding: 20px; } }
-@media (min-width: 1024px) { .page-wrap { padding: 28px 32px; } }
+@media (min-width: 640px)  { .page-wrap { padding: 16px; } }
+@media (min-width: 1024px) { .page-wrap { padding: 20px 28px; } }
 
 .page-sections {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
-@media (min-width: 768px) { .page-sections { gap: 24px; } }
+@media (min-width: 768px) { .page-sections { gap: 16px; } }
 
 /* ── CARD ────────────────────────────────────── */
 .card {
@@ -159,15 +159,15 @@ hr.divider { border: none; border-top: 1.5px solid var(--border); }
 
 /* ── RESPONSIVE GRID HELPERS ─────────────────────── */
 /* 2-col → 4-col at xl (stats) */
-.stats-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+.stats-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
 @media (min-width: 1280px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
 
 /* 1-col → 2-col at md */
-.two-col-md { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.two-col-md { display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 768px) { .two-col-md { grid-template-columns: 1fr 1fr; } }
 
 /* 1-col → 2-col at xl */
-.two-col-xl { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.two-col-xl { display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 1280px) { .two-col-xl { grid-template-columns: 1fr 1fr; } }
 
 /* 2-col → 4-col at md */

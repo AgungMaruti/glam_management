@@ -21,13 +21,15 @@ const palette = {
 export default function StatCard({ title, value, subtitle, icon: Icon, color = 'indigo' }: StatCardProps) {
   const p = palette[color]
   return (
-    <div className="card" style={{ padding: '18px 20px' }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: p.bg, marginBottom: 14 }}>
-        <Icon size={18} color={p.icon} strokeWidth={2.2} />
+    <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: p.bg, flexShrink: 0 }}>
+        <Icon size={17} color={p.icon} strokeWidth={2.2} />
       </div>
-      <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, marginBottom: 4 }}>{title}</p>
-      <p style={{ fontSize: 22, fontWeight: 800, color: p.text, letterSpacing: '-0.02em' }}>{value}</p>
-      {subtitle && <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{subtitle}</p>}
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 11, color: '#6B7280', fontWeight: 500, marginBottom: 2 }}>{title}</p>
+        <p style={{ fontSize: 18, fontWeight: 800, color: p.text, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</p>
+        {subtitle && <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{subtitle}</p>}
+      </div>
     </div>
   )
 }

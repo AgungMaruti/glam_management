@@ -140,16 +140,16 @@ export default function DashboardPage() {
 
       {/* Profit Breakdown */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Profit Breakdown</h2>
             <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Klik nilai untuk edit · {totalSold} pcs terjual</p>
           </div>
           <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>Margin {margin}%</span>
         </div>
-        <div style={{ padding: '16px 20px' }} className="two-col-md">
+        <div style={{ padding: '12px 16px' }} className="two-col-md">
           {/* Per unit */}
-          <div style={{ background: '#F9F8F4', borderRadius: 12, padding: '14px 16px' }}>
+          <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '12px 14px' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Per Botol</p>
             <EditableRow label="Harga Jual / pcs" value={sellingPrice} color="#4338CA" onSave={v => { setSellingPrice(v); saveSetting('selling_price', v) }} />
             <EditableRow label="HPP / pcs" value={hpp} onSave={v => { setHpp(v); saveSetting('hpp_per_unit', v) }} />
@@ -159,7 +159,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* Total */}
-          <div style={{ background: '#FAFBFF', borderRadius: 12, padding: '14px 16px', border: '1.5px solid #E0E7FF' }}>
+          <div style={{ background: '#FAFBFF', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #E0E7FF' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Total ({totalSold} pcs)</p>
             <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
@@ -189,11 +189,11 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className="two-col-xl">
-        <div className="card" style={{ padding: '16px 20px' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>Produk Paling Laku</h3>
-          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Berdasarkan total penjualan</p>
+        <div className="card" style={{ padding: '12px 16px' }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 1 }}>Produk Paling Laku</h3>
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>Berdasarkan total penjualan</p>
           {salesChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={210}>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={salesChart} barSize={28}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -205,11 +205,11 @@ export default function DashboardPage() {
           ) : <EmptyChart label="Belum ada data penjualan" />}
         </div>
 
-        <div className="card" style={{ padding: '16px 20px' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 2 }}>Tren Cashflow</h3>
-          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>6 bulan terakhir</p>
+        <div className="card" style={{ padding: '12px 16px' }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 1 }}>Tren Cashflow</h3>
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>6 bulan terakhir</p>
           {cfChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={210}>
+            <ResponsiveContainer width="100%" height={180}>
               <LineChart data={cfChart}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
