@@ -73,11 +73,11 @@ export default function ProductsPage() {
       />
 
       {products.length === 0 ? (
-        <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div className="card" style={{ padding: '36px 20px', textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <FlaskConical size={26} color="#6366F1" />
           </div>
-          <p style={{ color: '#6B7280', fontSize: 14, marginBottom: 16 }}>Belum ada produk. Tambahkan produk parfum pertamamu!</p>
+          <p style={{ color: '#64748B', fontSize: 14, marginBottom: 16 }}>Belum ada produk. Tambahkan produk parfum pertamamu!</p>
           <Button icon={Plus} onClick={() => { setPForm({ name: '', description: '' }); setMode('add-product') }}>Tambah Produk</Button>
         </div>
       ) : (
@@ -85,13 +85,13 @@ export default function ProductsPage() {
           {products.map(product => (
             <div key={product.id} className="card" style={{ overflow: 'hidden' }}>
               {/* Product header */}
-              <div style={{ padding: '16px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 11, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Package size={18} color="#6366F1" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</h3>
-                  {product.description && <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.description}</p>}
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</h3>
+                  {product.description && <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.description}</p>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <span className="show-sm"><Button variant="soft" size="sm" icon={Plus}
@@ -100,11 +100,11 @@ export default function ProductsPage() {
                     style={{ width: 32, height: 32, borderRadius: 8, background: '#EEF2FF', border: 'none', color: '#6366F1', cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}
                     className="hide-sm"><Plus size={14} /></button>
                   <button onClick={() => { setSelProduct(product); setPForm({ name: product.name, description: product.description || '' }); setMode('edit-product') }}
-                    style={{ width: 32, height: 32, borderRadius: 8, background: '#F9F8F5', border: '1.5px solid #E5E2DC', color: '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    style={{ width: 32, height: 32, borderRadius: 8, background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Edit2 size={13} />
                   </button>
                   <button onClick={() => deleteProduct(product.id)}
-                    style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF2F2', border: '1.5px solid #FECACA', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -113,32 +113,32 @@ export default function ProductsPage() {
               {/* Variants */}
               <div style={{ padding: '16px 20px' }}>
                 {product.variants.length === 0 ? (
-                  <div style={{ border: '2px dashed #E5E2DC', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 13, color: '#9CA3AF' }}>Belum ada varian</p>
+                  <div style={{ border: '2px dashed #E2E8F0', borderRadius: 10, padding: '20px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 13, color: '#94A3B8' }}>Belum ada varian</p>
                     <button onClick={() => { setSelProduct(product); setVForm({ name: '', size_ml: '', selling_price: '', stock: '' }); setMode('add-variant') }}
                       style={{ fontSize: 13, color: '#6366F1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginTop: 6 }}>+ Tambah varian</button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+                  <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
                     {product.variants.map(v => (
-                      <div key={v.id} style={{ background: '#F9F8F4', borderRadius: 11, padding: '12px 14px', border: '1.5px solid #E8E5E0', position: 'relative' }}>
+                      <div key={v.id} style={{ background: '#F8FAFC', borderRadius: 11, padding: '12px 14px', border: '1px solid #E2E8F0', position: 'relative' }}>
                         {/* Actions */}
                         <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 3 }}>
                           <button onClick={() => { setSelVariant(v); setVForm({ name: v.name, size_ml: v.size_ml?.toString() || '', selling_price: v.selling_price.toString(), stock: v.stock.toString() }); setMode('edit-variant') }}
-                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#C4C0BA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#C4C0BA' }}>
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
                             <Edit2 size={11} />
                           </button>
                           <button onClick={() => deleteVariant(v.id)}
-                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#C4C0BA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#C4C0BA' }}>
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
                             <Trash2 size={11} />
                           </button>
                         </div>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', paddingRight: 52, lineHeight: 1.3 }}>{v.name}</p>
-                        {v.size_ml > 0 && <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{v.size_ml} ml</p>}
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', paddingRight: 52, lineHeight: 1.3 }}>{v.name}</p>
+                        {v.size_ml > 0 && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>{v.size_ml} ml</p>}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#4338CA' }}>{formatRupiah(v.selling_price)}</span>
                           <span className="badge" style={{
@@ -161,11 +161,11 @@ export default function ProductsPage() {
         title={mode === 'edit-product' ? 'Edit Produk' : 'Tambah Produk Baru'}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Nama Produk *</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Nama Produk *</label>
             <input className="field" placeholder="Parfum Series A" value={pForm.name} onChange={e => setPForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Deskripsi</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Deskripsi</label>
             <textarea className="field" rows={3} placeholder="Deskripsi singkat..." value={pForm.description} onChange={e => setPForm(f => ({ ...f, description: e.target.value }))} style={{ resize: 'vertical' }} />
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
@@ -180,22 +180,22 @@ export default function ProductsPage() {
         title={mode === 'edit-variant' ? `Edit Varian — ${selVariant?.name}` : `Tambah Varian — ${selProduct?.name}`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {mode === 'edit-variant' && (
-            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderRadius: 10, background: '#FFFBEB', border: '1.5px solid #FDE68A' }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderRadius: 10, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
               <AlertTriangle size={14} color="#D97706" style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 12, color: '#92400E' }}>Edit stok untuk koreksi pencatatan yang salah — stok langsung diperbarui.</p>
             </div>
           )}
           <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Nama Varian *</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Nama Varian *</label>
             <input className="field" placeholder="Rose / Varian A" value={vForm.name} onChange={e => setVForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Ukuran (ml)</label>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Ukuran (ml)</label>
               <input className="field" type="number" placeholder="35" value={vForm.size_ml} onChange={e => setVForm(f => ({ ...f, size_ml: e.target.value }))} />
             </div>
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>
                 Stok (pcs) {mode === 'edit-variant' && <span style={{ color: '#D97706', fontSize: 11 }}>← koreksi</span>}
               </label>
               <input className="field" type="number" placeholder="0" value={vForm.stock} onChange={e => setVForm(f => ({ ...f, stock: e.target.value }))}
@@ -203,7 +203,7 @@ export default function ProductsPage() {
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Harga Jual (Rp) *</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }}>Harga Jual (Rp) *</label>
             <input className="field" type="number" placeholder="75000" value={vForm.selling_price} onChange={e => setVForm(f => ({ ...f, selling_price: e.target.value }))} />
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>

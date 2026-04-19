@@ -80,7 +80,7 @@ function printLaporan(data: {
   .bal { font-weight: 700; text-align: right; }
   th:nth-child(4), th:nth-child(5), th:nth-child(6) { text-align: right; }
   .summary { display: flex; gap: 16px; margin-top: 8px; }
-  .summary-box { flex: 1; border: 1.5px solid #e5e5e5; border-radius: 8px; padding: 12px 16px; }
+  .summary-box { flex: 1; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 16px; }
   .summary-box p { font-size: 11px; color: #666; margin-bottom: 4px; }
   .summary-box b { font-size: 15px; }
   .footer { margin-top: 24px; text-align: right; font-size: 10px; color: #aaa; border-top: 1px solid #e5e5e5; padding-top: 10px; }
@@ -134,8 +134,9 @@ function printLaporan(data: {
 </body>
 </html>`
 
-  const w = window.open('', '_blank')
-  if (w) { w.document.write(html); w.document.close() }
+  const blob = new Blob([html], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank')
 }
 
 export default function CashflowPage() {
@@ -290,22 +291,17 @@ export default function CashflowPage() {
         }
       />
 
-      {/* Mobile buttons */}
-      <div className="hide-sm" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Button variant="outline" size="sm" icon={ShoppingBag} onClick={() => setShowSaleModal(true)} style={{ width: '100%', justifyContent: 'center' }}>Catat Penjualan</Button>
-        <Button variant="ghost" size="sm" icon={Printer} onClick={() => setShowPrintModal(true)} style={{ width: '100%', justifyContent: 'center' }}>Cetak Laporan</Button>
-      </div>
 
       {/* Saldo Rekening Card */}
-      <div className="card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', background: currentBalance >= 0 ? '#FAFBFF' : '#FFF5F5', borderColor: currentBalance >= 0 ? '#C7D2FE' : '#FECACA' }}>
+      <div className="card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', background: currentBalance >= 0 ? '#F8FAFC' : '#FEF2F2', borderColor: currentBalance >= 0 ? '#C7D2FE' : '#FECACA' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: currentBalance >= 0 ? '#EEF2FF' : '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Wallet size={20} color={currentBalance >= 0 ? '#6366F1' : '#DC2626'} />
           </div>
           <div>
-            <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 2 }}>
+            <p style={{ fontSize: 12, color: '#64748B', marginBottom: 2 }}>
               Saldo Rekening Saat Ini
-              {saldoAwal && <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 6 }}>· modal awal {formatRupiah(saldoAwalAmount)}</span>}
+              {saldoAwal && <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 6 }}>· modal awal {formatRupiah(saldoAwalAmount)}</span>}
             </p>
             <p style={{ fontSize: 24, fontWeight: 800, color: currentBalance >= 0 ? '#4338CA' : '#DC2626', letterSpacing: '-0.03em', lineHeight: 1 }}>
               {formatRupiah(currentBalance)}
@@ -314,7 +310,7 @@ export default function CashflowPage() {
         </div>
         <button onClick={() => { setSaldoInput(saldoAwal?.amount.toString() || ''); setShowSaldoModal(true) }}
           style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}
-          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#E0E7FF'}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#C7D2FE'}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'}>
           <Edit2 size={12} />
           {saldoAwal ? 'Edit Saldo Awal' : 'Set Saldo Awal'}
@@ -331,22 +327,20 @@ export default function CashflowPage() {
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+      <div className="three-col">
         {[
-          { label: `Pemasukan${period !== 'all' ? ' Periode Ini' : ''}`, value: periodIncome, icon: ArrowUpCircle, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-          { label: `Pengeluaran${period !== 'all' ? ' Periode Ini' : ''}`, value: periodExpense, icon: ArrowDownCircle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
-          { label: `Selisih${period !== 'all' ? ' Periode Ini' : ''}`, value: periodIncome - periodExpense, icon: TrendingUp, color: (periodIncome - periodExpense) >= 0 ? '#4338CA' : '#DC2626', bg: (periodIncome - periodExpense) >= 0 ? '#EEF2FF' : '#FEF2F2', border: (periodIncome - periodExpense) >= 0 ? '#C7D2FE' : '#FECACA' },
+          { label: 'Pemasukan', value: periodIncome, icon: ArrowUpCircle, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+          { label: 'Pengeluaran', value: periodExpense, icon: ArrowDownCircle, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+          { label: 'Selisih', value: periodIncome - periodExpense, icon: TrendingUp, color: (periodIncome - periodExpense) >= 0 ? '#4338CA' : '#DC2626', bg: (periodIncome - periodExpense) >= 0 ? '#EEF2FF' : '#FEF2F2', border: (periodIncome - periodExpense) >= 0 ? '#C7D2FE' : '#FECACA' },
         ].map(c => {
           const Icon = c.icon
           return (
-            <div key={c.label} className="card" style={{ padding: '14px 16px', borderColor: c.border }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon size={15} color={c.color} />
-                </div>
-                <p style={{ fontSize: 12, color: '#6B7280' }}>{c.label}</p>
+            <div key={c.label} className="card" style={{ padding: '11px 12px', borderColor: c.border }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 7 }}>
+                <Icon size={13} color={c.color} />
               </div>
-              <p style={{ fontSize: 20, fontWeight: 800, color: c.color, letterSpacing: '-0.02em' }}>{formatRupiah(c.value)}</p>
+              <p style={{ fontSize: 10, color: '#64748B', marginBottom: 2 }}>{c.label}</p>
+              <p style={{ fontSize: 14, fontWeight: 800, color: c.color, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{formatRupiah(c.value)}</p>
             </div>
           )
         })}
@@ -354,37 +348,37 @@ export default function CashflowPage() {
 
       {/* Transactions */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Riwayat Transaksi</h3>
-          <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>{filtered.length} transaksi</span>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Riwayat Transaksi</h3>
+          <span className="badge" style={{ background: '#F3F4F6', color: '#64748B' }}>{filtered.length} transaksi</span>
         </div>
         {filtered.length === 0 ? (
-          <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: '#9CA3AF' }}>Belum ada transaksi di periode ini</p>
+          <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: '#94A3B8' }}>Belum ada transaksi di periode ini</p>
           </div>
         ) : (
           <div>
             {filtered.map((c, i) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #F5F3EF' : 'none', transition: 'background .15s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#FAFAF8'}
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: i < filtered.length - 1 ? '1px solid #F5F3EF' : 'none', transition: 'background .15s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'}
                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: c.type === 'income' ? '#F0FDF4' : '#FEF2F2' }}>
                   {c.type === 'income' ? <ArrowUpCircle size={16} color="#16A34A" /> : <ArrowDownCircle size={16} color="#DC2626" />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{c.category}</p>
-                  {c.description && <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.description}</p>}
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{c.category}</p>
+                  {c.description && <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.description}</p>}
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <p style={{ fontSize: 13, fontWeight: 700, color: c.type === 'income' ? '#16A34A' : '#DC2626' }}>
                     {c.type === 'income' ? '+' : '-'}{formatRupiah(c.amount)}
                   </p>
-                  <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{new Date(c.transaction_date).toLocaleDateString('id-ID')}</p>
+                  <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{new Date(c.transaction_date).toLocaleDateString('id-ID')}</p>
                 </div>
                 <button onClick={() => deleteCashflow(c.id)}
-                  style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#E5E2DC', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}
+                  style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#E2E8F0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#E5E2DC' }}>
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#E2E8F0' }}>
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -406,13 +400,13 @@ export default function CashflowPage() {
                 const active = !useCustomDate && printPeriod === p
                 return (
                   <button key={p} onClick={() => { setPrintPeriod(p); setUseCustomDate(false) }}
-                    style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1.5px solid', transition: 'all .15s', background: active ? '#6366F1' : '#F9F8F4', color: active ? '#fff' : '#6B7280', borderColor: active ? '#6366F1' : '#E5E2DC' }}>
+                    style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .15s', background: active ? '#6366F1' : '#F8FAFC', color: active ? '#fff' : '#64748B', borderColor: active ? '#6366F1' : '#E2E8F0' }}>
                     {labels[p]}
                   </button>
                 )
               })}
               <button onClick={() => setUseCustomDate(true)}
-                style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1.5px solid', transition: 'all .15s', background: useCustomDate ? '#6366F1' : '#F9F8F4', color: useCustomDate ? '#fff' : '#6B7280', borderColor: useCustomDate ? '#6366F1' : '#E5E2DC' }}>
+                style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .15s', background: useCustomDate ? '#6366F1' : '#F8FAFC', color: useCustomDate ? '#fff' : '#64748B', borderColor: useCustomDate ? '#6366F1' : '#E2E8F0' }}>
                 Pilih Tanggal
               </button>
             </div>
@@ -427,10 +421,10 @@ export default function CashflowPage() {
           {/* Type filter */}
           <div>
             <label style={lbl}>Jenis Transaksi</label>
-            <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1.5px solid #E5E2DC' }}>
+            <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
               {[{ v: 'all', l: 'Semua' }, { v: 'income', l: '↑ Pemasukan' }, { v: 'expense', l: '↓ Pengeluaran' }].map(t => (
                 <button key={t.v} onClick={() => { setPrintType(t.v); setPrintCat('all') }}
-                  style={{ flex: 1, padding: '8px', fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all .15s', background: printType === t.v ? '#6366F1' : '#F9F8F4', color: printType === t.v ? '#fff' : '#9CA3AF' }}>
+                  style={{ flex: 1, padding: '8px', fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all .15s', background: printType === t.v ? '#6366F1' : '#F8FAFC', color: printType === t.v ? '#fff' : '#94A3B8' }}>
                   {t.l}
                 </button>
               ))}
@@ -449,12 +443,12 @@ export default function CashflowPage() {
           </div>
 
           {/* Preview summary */}
-          <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '12px 16px', border: '1.5px solid #E8E5E0' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Preview Laporan</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 16px', border: '1px solid #E2E8F0' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Preview Laporan</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center' }}>
-              <div><p style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Transaksi</p><p style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{printPreviewCount}</p></div>
-              <div><p style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Total Masuk</p><p style={{ fontSize: 13, fontWeight: 700, color: '#16A34A' }}>{formatRupiah(printPreviewIn)}</p></div>
-              <div><p style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Total Keluar</p><p style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{formatRupiah(printPreviewOut)}</p></div>
+              <div><p style={{ fontSize: 11, color: '#64748B', marginBottom: 2 }}>Transaksi</p><p style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>{printPreviewCount}</p></div>
+              <div><p style={{ fontSize: 11, color: '#64748B', marginBottom: 2 }}>Total Masuk</p><p style={{ fontSize: 13, fontWeight: 700, color: '#16A34A' }}>{formatRupiah(printPreviewIn)}</p></div>
+              <div><p style={{ fontSize: 11, color: '#64748B', marginBottom: 2 }}>Total Keluar</p><p style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{formatRupiah(printPreviewOut)}</p></div>
             </div>
           </div>
 
@@ -468,7 +462,7 @@ export default function CashflowPage() {
       {/* Set Saldo Awal Modal */}
       <Modal open={showSaldoModal} onClose={() => setShowSaldoModal(false)} title={saldoAwal ? 'Edit Saldo Awal' : 'Set Saldo Awal'}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #C7D2FE' }}>
+          <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
             <p style={{ fontSize: 13, color: '#3730A3', fontWeight: 600, marginBottom: 4 }}>Apa itu Saldo Awal?</p>
             <p style={{ fontSize: 12, color: '#4338CA', lineHeight: 1.5 }}>Jumlah uang yang ada di rekening/kas kamu sebelum mulai mencatat di aplikasi ini.</p>
           </div>
@@ -477,8 +471,8 @@ export default function CashflowPage() {
             <input className="field" type="number" placeholder="Contoh: 500000" value={saldoInput} onChange={e => setSaldoInput(e.target.value)} autoFocus />
           </div>
           {saldoInput && (
-            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1.5px solid #BBF7D0', textAlign: 'center' }}>
-              <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 2 }}>Saldo rekening setelah set</p>
+            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1px solid #BBF7D0', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, color: '#64748B', marginBottom: 2 }}>Saldo rekening setelah set</p>
               <p style={{ fontSize: 18, fontWeight: 800, color: '#16A34A' }}>{formatRupiah(parseFloat(saldoInput || '0') + allIncome - allExpense)}</p>
             </div>
           )}
@@ -492,10 +486,10 @@ export default function CashflowPage() {
       {/* Add Cashflow Modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Tambah Transaksi">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1.5px solid #E5E2DC' }}>
+          <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
             {(['income', 'expense'] as const).map(t => (
               <button key={t} onClick={() => setForm(f => ({ ...f, type: t, category: '' }))}
-                style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all .15s', background: form.type === t ? (t === 'income' ? '#16A34A' : '#DC2626') : '#F9F8F4', color: form.type === t ? '#fff' : '#9CA3AF' }}>
+                style={{ flex: 1, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all .15s', background: form.type === t ? (t === 'income' ? '#16A34A' : '#DC2626') : '#F8FAFC', color: form.type === t ? '#fff' : '#94A3B8' }}>
                 {t === 'income' ? '↑ Pemasukan' : '↓ Pengeluaran'}
               </button>
             ))}
@@ -534,8 +528,8 @@ export default function CashflowPage() {
             <div><label style={lbl}>Harga/pcs (Rp) *</label><input className="field" type="number" placeholder="0" value={saleForm.unit_price} onChange={e => setSaleForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
           </div>
           {saleForm.quantity && saleForm.unit_price && (
-            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 16px', textAlign: 'center', border: '1.5px solid #BBF7D0' }}>
-              <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Total Penjualan</p>
+            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 16px', textAlign: 'center', border: '1px solid #BBF7D0' }}>
+              <p style={{ fontSize: 11, color: '#64748B', marginBottom: 4 }}>Total Penjualan</p>
               <p style={{ fontSize: 22, fontWeight: 800, color: '#16A34A' }}>{formatRupiah(parseInt(saleForm.quantity || '0') * parseFloat(saleForm.unit_price || '0'))}</p>
             </div>
           )}
@@ -550,7 +544,7 @@ export default function CashflowPage() {
   )
 }
 
-const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }
+const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }
 
 function Spinner() {
   return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}><div style={{ width: 28, height: 28, border: '2.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /></div>

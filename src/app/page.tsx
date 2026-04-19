@@ -12,8 +12,8 @@ import PageHeader from '@/components/ui/PageHeader'
 const Tip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#fff', border: '1.5px solid #E5E2DC', borderRadius: 10, padding: '10px 14px', fontSize: 13, boxShadow: '0 4px 16px rgba(0,0,0,.08)' }}>
-      <p style={{ fontWeight: 700, color: '#374151', marginBottom: 4 }}>{label}</p>
+    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 14px', fontSize: 13, boxShadow: '0 4px 16px rgba(0,0,0,.08)' }}>
+      <p style={{ fontWeight: 700, color: '#334155', marginBottom: 4 }}>{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color, fontWeight: 600 }}>{p.name}: {formatRupiah(p.value)}</p>
       ))}
@@ -32,22 +32,22 @@ function EditableRow({ label, value, onSave, color }: { label: string; value: nu
   const confirm = () => { onSave(parseFloat(draft) || 0); setEditing(false) }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #F3F0EC' }}>
-      <span style={{ fontSize: 13, color: '#6B7280' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #F1F5F9' }}>
+      <span style={{ fontSize: 13, color: '#64748B' }}>{label}</span>
       {editing ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input ref={ref} type="number" value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') { setDraft(value.toString()); setEditing(false) } }}
-            style={{ width: 120, textAlign: 'right', fontSize: 13, fontWeight: 700, padding: '4px 10px', borderRadius: 8, border: '1.5px solid #6366F1', background: '#EEF2FF', outline: 'none', color: color || '#111827', fontFamily: 'inherit' }}
+            style={{ width: 120, textAlign: 'right', fontSize: 13, fontWeight: 700, padding: '4px 10px', borderRadius: 8, border: '1px solid #6366F1', background: '#EEF2FF', outline: 'none', color: color || '#0F172A', fontFamily: 'inherit' }}
           />
           <button onClick={confirm} style={{ width: 28, height: 28, borderRadius: 8, background: '#F0FDF4', border: 'none', color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={13} /></button>
           <button onClick={() => { setDraft(value.toString()); setEditing(false) }} style={{ width: 28, height: 28, borderRadius: 8, background: '#FEF2F2', border: 'none', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={13} /></button>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setEditing(true)}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: color || '#111827' }}>{formatRupiah(value)}</span>
-          <Edit2 size={12} color="#C4C0BA" />
+          <span style={{ fontSize: 13, fontWeight: 700, color: color || '#0F172A' }}>{formatRupiah(value)}</span>
+          <Edit2 size={12} color="#CBD5E1" />
         </div>
       )}
     </div>
@@ -140,46 +140,46 @@ export default function DashboardPage() {
 
       {/* Profit Breakdown */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Profit Breakdown</h2>
-            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Klik nilai untuk edit · {totalSold} pcs terjual</p>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>Profit Breakdown</h2>
+            <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>Klik nilai untuk edit · {totalSold} pcs terjual</p>
           </div>
           <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>Margin {margin}%</span>
         </div>
         <div style={{ padding: '12px 16px' }} className="two-col-md">
           {/* Per unit */}
-          <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '12px 14px' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Per Botol</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Per Botol</p>
             <EditableRow label="Harga Jual / pcs" value={sellingPrice} color="#4338CA" onSave={v => { setSellingPrice(v); saveSetting('selling_price', v) }} />
             <EditableRow label="HPP / pcs" value={hpp} onSave={v => { setHpp(v); saveSetting('hpp_per_unit', v) }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, marginTop: 2 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Margin / pcs</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Margin / pcs</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>{formatRupiah(sellingPrice - hpp)}</span>
             </div>
           </div>
           {/* Total */}
-          <div style={{ background: '#FAFBFF', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #E0E7FF' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Total ({totalSold} pcs)</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Total ({totalSold} pcs)</p>
             <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
-                { label: 'Gross Revenue', value: grossRev, color: '#111827' },
+                { label: 'Gross Revenue', value: grossRev, color: '#0F172A' },
                 { label: 'Total HPP', value: -totalHpp, color: '#DC2626' },
               ].map(r => (
                 <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#6B7280' }}>{r.label}</span>
+                  <span style={{ color: '#64748B' }}>{r.label}</span>
                   <span style={{ fontWeight: 600, color: r.color }}>{r.value < 0 ? `- ${formatRupiah(-r.value)}` : formatRupiah(r.value)}</span>
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E0E7FF', paddingTop: 6 }}>
-                <span style={{ fontWeight: 600, color: '#374151' }}>Gross Profit</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #C7D2FE', paddingTop: 6 }}>
+                <span style={{ fontWeight: 600, color: '#334155' }}>Gross Profit</span>
                 <span style={{ fontWeight: 700, color: '#16A34A' }}>{formatRupiah(grossProfit)}</span>
               </div>
-              {gaji > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Gaji Karyawan</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(gaji)}</span></div>}
-              {marketing > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Marketing</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(marketing)}</span></div>}
-              {operasional > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Operasional</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(operasional)}</span></div>}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E0E7FF', paddingTop: 8, marginTop: 2 }}>
-                <span style={{ fontWeight: 700, color: '#111827', fontSize: 14 }}>NET PROFIT</span>
+              {gaji > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Gaji Karyawan</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(gaji)}</span></div>}
+              {marketing > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Marketing</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(marketing)}</span></div>}
+              {operasional > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Operasional</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(operasional)}</span></div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #C7D2FE', paddingTop: 8, marginTop: 2 }}>
+                <span style={{ fontWeight: 700, color: '#0F172A', fontSize: 14 }}>NET PROFIT</span>
                 <span style={{ fontWeight: 800, fontSize: 16, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</span>
               </div>
             </div>
@@ -190,14 +190,14 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="two-col-xl">
         <div className="card" style={{ padding: '12px 16px' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 1 }}>Produk Paling Laku</h3>
-          <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>Berdasarkan total penjualan</p>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', marginBottom: 1 }}>Produk Paling Laku</h3>
+          <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Berdasarkan total penjualan</p>
           {salesChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={salesChart} barSize={28}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                 <Tooltip content={<Tip />} cursor={{ fill: '#F5F4F0' }} />
                 <Bar dataKey="total" name="Penjualan" fill="#6366F1" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -206,14 +206,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="card" style={{ padding: '12px 16px' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 1 }}>Tren Cashflow</h3>
-          <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>6 bulan terakhir</p>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', marginBottom: 1 }}>Tren Cashflow</h3>
+          <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>6 bulan terakhir</p>
           {cfChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={160}>
               <LineChart data={cfChart}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                <XAxis dataKey="month" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                 <Tooltip content={<Tip />} />
                 <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                 <Line type="monotone" dataKey="income" name="Pemasukan" stroke="#16A34A" strokeWidth={2} dot={{ fill: '#16A34A', r: 3, strokeWidth: 0 }} />
@@ -227,7 +227,7 @@ export default function DashboardPage() {
       {/* Critical stock */}
       {criticalMaterials.length > 0 && (
         <div className="card" style={{ overflow: 'hidden', borderColor: '#FCA5A5' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1.5px solid #FEE2E2', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <AlertTriangle size={15} color="#DC2626" />
             </div>
@@ -236,12 +236,12 @@ export default function DashboardPage() {
               <p style={{ fontSize: 11, color: '#F87171' }}>Segera lakukan restock</p>
             </div>
           </div>
-          <div style={{ padding: '14px 20px', display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+          <div style={{ padding: '12px 16px', display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
             {criticalMaterials.map(m => (
               <div key={m.id} style={{ background: '#FEF2F2', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{m.name}</p>
-                  <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>Min: {m.min_stock} {m.unit}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>{m.name}</p>
+                  <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>Min: {m.min_stock} {m.unit}</p>
                 </div>
                 <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C' }}>{m.stock} {m.unit}</span>
               </div>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
 }
 
 function EmptyChart({ label }: { label: string }) {
-  return <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ fontSize: 13, color: '#D1D5DB' }}>{label}</p></div>
+  return <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ fontSize: 13, color: '#CBD5E1' }}>{label}</p></div>
 }
 
 function Spinner() {

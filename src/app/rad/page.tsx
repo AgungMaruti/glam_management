@@ -2,7 +2,6 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { Calculator, Plus, Trash2, ChevronDown, ChevronUp, Users, DollarSign, Package, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
@@ -97,11 +96,11 @@ export default function RADPage() {
       />
 
       {rads.length === 0 ? (
-        <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div className="card" style={{ padding: '36px 20px', textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <Calculator size={26} color="#6366F1" />
           </div>
-          <p style={{ color: '#6B7280', fontSize: 14, marginBottom: 16 }}>Belum ada RAD. Buat rencana anggaran pertamamu!</p>
+          <p style={{ color: '#64748B', fontSize: 14, marginBottom: 16 }}>Belum ada RAD. Buat rencana anggaran pertamamu!</p>
           <Button icon={Plus} onClick={() => setShowModal(true)}>Buat RAD</Button>
         </div>
       ) : (
@@ -118,58 +117,57 @@ export default function RADPage() {
                 {/* Header */}
                 <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'background .15s' }}
                   onClick={() => setExpandedId(isOpen ? null : rad.id)}
-                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#FAFAF8'}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
                   <div style={{ width: 38, height: 38, borderRadius: 10, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Calculator size={17} color="#6366F1" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rad.title}</p>
-                    <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{rad.batch_quantity} pcs · {new Date(rad.created_at).toLocaleDateString('id-ID')}</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rad.title}</p>
+                    <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{rad.batch_quantity} pcs · {new Date(rad.created_at).toLocaleDateString('id-ID')}</p>
                   </div>
                   <div className="show-sm-flex" style={{ gap: 20, alignItems: 'center', flexShrink: 0 }}>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 11, color: '#9CA3AF' }}>HPP/botol</p>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{formatRupiah(hpp)}</p>
+                      <p style={{ fontSize: 11, color: '#94A3B8' }}>HPP/botol</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{formatRupiah(hpp)}</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 11, color: '#9CA3AF' }}>Net Profit</p>
+                      <p style={{ fontSize: 11, color: '#94A3B8' }}>Net Profit</p>
                       <p style={{ fontSize: 13, fontWeight: 700, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <button onClick={e => { e.stopPropagation(); deleteRAD(rad.id) }}
-                      style={{ width: 30, height: 30, borderRadius: 8, background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: 30, height: 30, borderRadius: 8, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#D1D5DB' }}>
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
                       <Trash2 size={13} />
                     </button>
-                    {isOpen ? <ChevronUp size={15} color="#9CA3AF" /> : <ChevronDown size={15} color="#9CA3AF" />}
+                    {isOpen ? <ChevronUp size={15} color="#94A3B8" /> : <ChevronDown size={15} color="#94A3B8" />}
                   </div>
                 </div>
 
                 {/* Mobile quick stats */}
                 <div className="hide-sm" style={{ padding: '0 18px 12px', gap: 16 }}>
-                  <div><p style={{ fontSize: 11, color: '#9CA3AF' }}>HPP/botol</p><p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{formatRupiah(hpp)}</p></div>
-                  <div><p style={{ fontSize: 11, color: '#9CA3AF' }}>Net Profit</p><p style={{ fontSize: 13, fontWeight: 700, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</p></div>
+                  <div><p style={{ fontSize: 11, color: '#94A3B8' }}>HPP/botol</p><p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{formatRupiah(hpp)}</p></div>
+                  <div><p style={{ fontSize: 11, color: '#94A3B8' }}>Net Profit</p><p style={{ fontSize: 13, fontWeight: 700, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</p></div>
                 </div>
 
                 {/* Expanded */}
-                <AnimatePresence>
                   {isOpen && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <div style={{ borderTop: '1.5px solid #F0EDE8', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <div style={{ borderTop: '1px solid #F1F5F9', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* Items */}
                         <div>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Rincian Biaya</p>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Rincian Biaya</p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {(rad.items || []).map(item => {
                               const c = item.total_qty > 0 ? (item.total_cost / item.total_qty) * item.usage_per_bottle : 0
                               return (
-                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', borderRadius: 8, background: '#F9F8F4' }}>
+                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', borderRadius: 8, background: '#F8FAFC' }}>
                                   <div>
-                                    <p style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{item.name}</p>
-                                    <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{item.total_qty} {item.unit} = {formatRupiah(item.total_cost)} · pakai {item.usage_per_bottle} {item.unit}/botol</p>
+                                    <p style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{item.name}</p>
+                                    <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{item.total_qty} {item.unit} = {formatRupiah(item.total_cost)} · pakai {item.usage_per_bottle} {item.unit}/botol</p>
                                   </div>
                                   <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{formatRupiah(c)}/botol</span>
                                 </div>
@@ -181,37 +179,36 @@ export default function RADPage() {
                         {/* Summary grid */}
                         <div className="four-col-md">
                           {[
-                            { label: 'HPP/botol', value: formatRupiah(hpp), color: '#111827', bg: '#F9F8F4' },
+                            { label: 'HPP/botol', value: formatRupiah(hpp), color: '#0F172A', bg: '#F8FAFC' },
                             { label: 'Harga Jual', value: formatRupiah(rad.selling_price), color: '#4338CA', bg: '#EEF2FF' },
                             { label: 'Margin/botol', value: formatRupiah(rad.selling_price - hpp), color: '#16A34A', bg: '#F0FDF4' },
                             { label: 'Margin %', value: `${rad.selling_price > 0 && hpp > 0 ? (((rad.selling_price - hpp) / hpp) * 100).toFixed(0) : 0}%`, color: '#B45309', bg: '#FFFBEB' },
                           ].map(s => (
                             <div key={s.label} style={{ borderRadius: 10, padding: '10px 12px', textAlign: 'center', background: s.bg }}>
-                              <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>{s.label}</p>
+                              <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 4 }}>{s.label}</p>
                               <p style={{ fontSize: 14, fontWeight: 800, color: s.color }}>{s.value}</p>
                             </div>
                           ))}
                         </div>
 
                         {/* Profit calc */}
-                        <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '14px 16px', border: '1.5px solid #E8E5E0' }}>
-                          <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Kalkulasi Profit ({rad.batch_quantity} pcs)</p>
+                        <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Kalkulasi Profit ({rad.batch_quantity} pcs)</p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 7, fontSize: 13 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Revenue</span><span style={{ fontWeight: 600, color: '#111827' }}>{formatRupiah(revenue)}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Total HPP</span><span style={{ fontWeight: 600, color: '#DC2626' }}>- {formatRupiah(totalHpp)}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E8E5E0', paddingTop: 8 }}><span style={{ fontWeight: 600, color: '#374151' }}>Gross Profit</span><span style={{ fontWeight: 700, color: '#16A34A' }}>{formatRupiah(revenue - totalHpp)}</span></div>
-                            {rad.salary_cost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Gaji Karyawan</span><span style={{ fontWeight: 600, color: '#D97706' }}>- {formatRupiah(rad.salary_cost)}</span></div>}
-                            {rad.other_cost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Biaya Lain</span><span style={{ fontWeight: 600, color: '#D97706' }}>- {formatRupiah(rad.other_cost)}</span></div>}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E8E5E0', paddingTop: 8 }}>
-                              <span style={{ fontWeight: 800, color: '#111827', fontSize: 14 }}>NET PROFIT</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Revenue</span><span style={{ fontWeight: 600, color: '#0F172A' }}>{formatRupiah(revenue)}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Total HPP</span><span style={{ fontWeight: 600, color: '#DC2626' }}>- {formatRupiah(totalHpp)}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: 8 }}><span style={{ fontWeight: 600, color: '#334155' }}>Gross Profit</span><span style={{ fontWeight: 700, color: '#16A34A' }}>{formatRupiah(revenue - totalHpp)}</span></div>
+                            {rad.salary_cost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Gaji Karyawan</span><span style={{ fontWeight: 600, color: '#D97706' }}>- {formatRupiah(rad.salary_cost)}</span></div>}
+                            {rad.other_cost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Biaya Lain</span><span style={{ fontWeight: 600, color: '#D97706' }}>- {formatRupiah(rad.other_cost)}</span></div>}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
+                              <span style={{ fontWeight: 800, color: '#0F172A', fontSize: 14 }}>NET PROFIT</span>
                               <span style={{ fontWeight: 800, fontSize: 16, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</span>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
-                </AnimatePresence>
               </div>
             )
           })}
@@ -235,7 +232,7 @@ export default function RADPage() {
                 <Plus size={12} /> Tambah Item
               </button>
             </div>
-            <div style={{ background: '#EFF6FF', borderRadius: 9, padding: '8px 12px', marginBottom: 10, display: 'flex', gap: 8, border: '1.5px solid #BFDBFE' }}>
+            <div style={{ background: '#EFF6FF', borderRadius: 9, padding: '8px 12px', marginBottom: 10, display: 'flex', gap: 8, border: '1px solid #BFDBFE' }}>
               <Info size={13} color="#3B82F6" style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 12, color: '#1D4ED8' }}>Input qty total yang dibeli & pemakaian per botol — HPP dihitung proporsional otomatis</p>
             </div>
@@ -245,7 +242,7 @@ export default function RADPage() {
               {/* Header */}
               <div style={{ display: 'grid', gap: 6, padding: '0 2px 4px', gridTemplateColumns: '2fr 1fr 1fr 1.2fr 1fr 28px', minWidth: 560 }}>
                 {['Nama Item', 'Qty Beli', 'Satuan', 'Harga Total (Rp)', 'Pakai/Botol', ''].map(h => (
-                  <p key={h} style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600 }}>{h}</p>
+                  <p key={h} style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{h}</p>
                 ))}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -257,9 +254,9 @@ export default function RADPage() {
                     <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} type="number" placeholder="45000" value={item.total_cost} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, total_cost: e.target.value } : x))} />
                     <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} type="number" placeholder="15" value={item.usage_per_bottle} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, usage_per_bottle: e.target.value } : x))} />
                     <button onClick={() => setItems(p => p.filter((_, idx) => idx !== i))}
-                      style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#D1D5DB' }}>
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -269,15 +266,15 @@ export default function RADPage() {
 
             {/* Live HPP preview */}
             {items.some(i => cpb(i) > 0) && (
-              <div style={{ marginTop: 10, background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #C7D2FE' }}>
+              <div style={{ marginTop: 10, background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
                 {items.filter(i => cpb(i) > 0).map((item, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                    <span style={{ color: '#6B7280' }}>{item.name || `Item ${i + 1}`}</span>
+                    <span style={{ color: '#64748B' }}>{item.name || `Item ${i + 1}`}</span>
                     <span style={{ fontWeight: 700, color: '#4338CA' }}>{formatRupiah(cpb(item))}/botol</span>
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid #C7D2FE', paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700, color: '#374151' }}>Total HPP</span>
+                  <span style={{ fontWeight: 700, color: '#334155' }}>Total HPP</span>
                   <span style={{ fontWeight: 800, color: '#4338CA' }}>{formatRupiah(prevHpp)}/botol</span>
                 </div>
               </div>
@@ -293,7 +290,7 @@ export default function RADPage() {
             ].map(f => (
               <div key={f.label}>
                 <label style={{ ...lbl, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <f.icon size={12} color="#9CA3AF" />{f.label}
+                  <f.icon size={12} color="#94A3B8" />{f.label}
                 </label>
                 <input className="field" type="number" placeholder="0" value={f.val} onChange={e => f.set(e.target.value)} />
               </div>
@@ -302,16 +299,16 @@ export default function RADPage() {
 
           {/* Preview */}
           {prevHpp > 0 && prevSell > 0 && (
-            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '14px 16px', border: '1.5px solid #BBF7D0' }}>
+            <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '14px 16px', border: '1px solid #BBF7D0' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#16A34A', marginBottom: 10 }}>Preview Kalkulasi</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>HPP/botol:</span><span style={{ fontWeight: 700, color: '#111827' }}>{formatRupiah(prevHpp)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Harga jual:</span><span style={{ fontWeight: 700, color: '#4338CA' }}>{formatRupiah(prevSell)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Saran (30%):</span><span style={{ fontWeight: 600, color: '#16A34A' }}>{formatRupiah(prevHpp * 1.3)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#6B7280' }}>Saran (50%):</span><span style={{ fontWeight: 600, color: '#16A34A' }}>{formatRupiah(prevHpp * 1.5)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>HPP/botol:</span><span style={{ fontWeight: 700, color: '#0F172A' }}>{formatRupiah(prevHpp)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Harga jual:</span><span style={{ fontWeight: 700, color: '#4338CA' }}>{formatRupiah(prevSell)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Saran (30%):</span><span style={{ fontWeight: 600, color: '#16A34A' }}>{formatRupiah(prevHpp * 1.3)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Saran (50%):</span><span style={{ fontWeight: 600, color: '#16A34A' }}>{formatRupiah(prevHpp * 1.5)}</span></div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 13, borderTop: '1px solid #BBF7D0', paddingTop: 10, marginTop: 8 }}>
-                <span style={{ color: '#374151' }}>Net Profit ({prevQty} pcs):</span>
+                <span style={{ color: '#334155' }}>Net Profit ({prevQty} pcs):</span>
                 <span style={{ color: prevNet >= 0 ? '#16A34A' : '#DC2626', fontSize: 15, fontWeight: 800 }}>{formatRupiah(prevNet)}</span>
               </div>
             </div>
@@ -327,7 +324,7 @@ export default function RADPage() {
   )
 }
 
-const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }
+const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }
 
 function Spinner() {
   return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}><div style={{ width: 28, height: 28, border: '2.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /></div>

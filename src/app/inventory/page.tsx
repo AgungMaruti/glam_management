@@ -123,38 +123,38 @@ export default function InventoryPage() {
         {tab === 'materials' && (
           <div>
             {materials.length === 0 ? (
-              <div className="card" style={{ padding: '48px 20px', textAlign: 'center' }}>
-                <Boxes size={28} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
-                <p style={{ color: '#9CA3AF', fontSize: 14 }}>Belum ada bahan baku</p>
+              <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
+                <Boxes size={24} color="#CBD5E1" style={{ margin: '0 auto 10px' }} />
+                <p style={{ color: '#94A3B8', fontSize: 14 }}>Belum ada bahan baku</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+              <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
                 {materials.map(m => {
                   const critical = m.stock <= m.min_stock
                   const pct = Math.min((m.stock / Math.max(m.min_stock * 3, 1)) * 100, 100)
                   return (
-                    <div key={m.id} className="card" style={{ padding: '16px 18px', ...(critical ? { borderColor: '#FCA5A5' } : {}) }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                        <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{m.name}</p>
-                          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{formatRupiah(m.cost_per_unit)}/{m.unit}</p>
+                    <div key={m.id} className="card" style={{ padding: '12px 14px', ...(critical ? { borderColor: '#FCA5A5' } : {}) }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
+                          <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>{formatRupiah(m.cost_per_unit)}/{m.unit}</p>
                         </div>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C' }}>Kritis</span>}
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, marginLeft: 4 }}>
+                          {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', fontSize: 9 }}>!</span>}
                           <button onClick={() => deleteMaterial(m.id)}
-                            style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#D1D5DB' }}>
-                            <Trash2 size={13} />
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                            <Trash2 size={11} />
                           </button>
                         </div>
                       </div>
-                      <p style={{ fontSize: 28, fontWeight: 800, color: critical ? '#DC2626' : '#111827', letterSpacing: '-0.03em', marginBottom: 2 }}>{m.stock}</p>
-                      <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 10 }}>{m.unit} tersisa</p>
-                      <div style={{ height: 5, borderRadius: 99, background: '#F3F4F6', overflow: 'hidden' }}>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: critical ? '#DC2626' : '#0F172A', letterSpacing: '-0.03em', marginBottom: 1 }}>{m.stock}</p>
+                      <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 8 }}>{m.unit} tersisa</p>
+                      <div style={{ height: 4, borderRadius: 99, background: '#F3F4F6', overflow: 'hidden' }}>
                         <div style={{ height: '100%', borderRadius: 99, background: critical ? '#EF4444' : '#6366F1', width: `${pct}%`, transition: 'width .3s' }} />
                       </div>
-                      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 6 }}>Min: {m.min_stock} {m.unit}</p>
+                      <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 5 }}>Min: {m.min_stock} {m.unit}</p>
                     </div>
                   )
                 })}
@@ -167,23 +167,23 @@ export default function InventoryPage() {
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {variants.length === 0 ? (
-                <div className="card" style={{ padding: '48px 20px', textAlign: 'center' }}>
-                  <p style={{ color: '#9CA3AF', fontSize: 14 }}>Tambah produk & varian terlebih dahulu</p>
+                <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
+                  <p style={{ color: '#94A3B8', fontSize: 14 }}>Tambah produk & varian terlebih dahulu</p>
                 </div>
               ) : variants.map(v => (
                 <div key={v.id} className="card" style={{ padding: '14px 18px' }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 10 }}>{v.name}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>{v.name}</p>
                   {v.recipes.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {v.recipes.map(r => (
-                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F9F8F4' }}>
-                          <span style={{ fontSize: 13, color: '#374151' }}>{r.raw_material?.name}</span>
+                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F8FAFC' }}>
+                          <span style={{ fontSize: 13, color: '#334155' }}>{r.raw_material?.name}</span>
                           <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{r.quantity_needed} {r.raw_material?.unit}/botol</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ fontSize: 13, color: '#9CA3AF' }}>Belum ada resep</p>
+                    <p style={{ fontSize: 13, color: '#94A3B8' }}>Belum ada resep</p>
                   )}
                 </div>
               ))}
@@ -193,12 +193,12 @@ export default function InventoryPage() {
 
         {tab === 'production' && (
           <div>
-            <div className="card" style={{ padding: '48px 20px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <Zap size={24} color="#6366F1" />
               </div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 6 }}>Produksi Batch</p>
-              <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 20 }}>Stok bahan baku berkurang otomatis sesuai resep</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Produksi Batch</p>
+              <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 20 }}>Stok bahan baku berkurang otomatis sesuai resep</p>
               <Button icon={Zap} onClick={() => setShowProdModal(true)}>Mulai Produksi</Button>
             </div>
           </div>
@@ -223,8 +223,8 @@ export default function InventoryPage() {
           </div>
 
           {/* Harga: bisa input total+qty atau langsung per satuan */}
-          <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '12px 14px', border: '1.5px solid #E8E5E0' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Harga Bahan</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Harga Bahan</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={lbl}>Harga Beli Total (Rp)</label>
@@ -246,9 +246,9 @@ export default function InventoryPage() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flex: 1, height: 1, background: '#E8E5E0' }} />
-              <span style={{ fontSize: 11, color: '#9CA3AF' }}>atau langsung input</span>
-              <div style={{ flex: 1, height: 1, background: '#E8E5E0' }} />
+              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
+              <span style={{ fontSize: 11, color: '#94A3B8' }}>atau langsung input</span>
+              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
             </div>
             <div style={{ marginTop: 10 }}>
               <label style={lbl}>Harga per {matForm.unit} (Rp)</label>
@@ -309,11 +309,11 @@ export default function InventoryPage() {
           <div><label style={lbl}>Jumlah Produksi *</label><input className="field" type="number" placeholder="15" value={prodForm.quantity} onChange={e => setProdForm(f => ({ ...f, quantity: e.target.value }))} /></div>
           <div><label style={lbl}>Catatan</label><input className="field" placeholder="Opsional" value={prodForm.notes} onChange={e => setProdForm(f => ({ ...f, notes: e.target.value }))} /></div>
           {preview.length > 0 && (
-            <div style={{ background: '#F9F8F4', borderRadius: 10, padding: '12px 14px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Kebutuhan Bahan</p>
+            <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Kebutuhan Bahan</p>
               {preview.map(p => (
                 <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                  <span style={{ color: '#374151' }}>{p.name}</span>
+                  <span style={{ color: '#334155' }}>{p.name}</span>
                   <span style={{ fontWeight: 700, color: p.ok ? '#16A34A' : '#DC2626' }}>{p.needed} / {p.available} {p.ok ? '✓' : '✗ kurang'}</span>
                 </div>
               ))}
@@ -329,7 +329,7 @@ export default function InventoryPage() {
   )
 }
 
-const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }
+const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }
 
 function Spinner() {
   return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}><div style={{ width: 28, height: 28, border: '2.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /></div>

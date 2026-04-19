@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X } from 'lucide-react'
 
 const nav = [
@@ -14,66 +13,83 @@ const nav = [
   { href: '/cashflow', label: 'Cashflow', icon: TrendingUp },
 ]
 
-const sidebarStyle: React.CSSProperties = {
-  background: '#111827',
-  borderRight: '1px solid rgba(255,255,255,0.06)',
-}
-
 function Brand() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div style={{
-        width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+        width: 32, height: 32, borderRadius: 9,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+        boxShadow: '0 2px 8px rgba(99,102,241,.3)',
+        flexShrink: 0,
       }}>
-        <Sparkles size={15} color="#fff" />
+        <Sparkles size={14} color="#fff" strokeWidth={2.2} />
       </div>
       <div>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Glam Suite</p>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Business Manager</p>
+        <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', lineHeight: 1 }}>Glam Suite</p>
+        <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>Business Manager</p>
       </div>
     </div>
   )
 }
 
-function NavContent({ onClose }: { onClose?: () => void }) {
-  const pathname = usePathname()
+function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Brand */}
+      <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Brand />
         {onClose && (
-          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)', cursor: 'pointer', background: 'none', border: 'none', display: 'flex' }}>
-            <X size={18} />
+          <button onClick={onClose} style={{
+            width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer',
+          }}>
+            <X size={15} />
           </button>
         )}
       </div>
 
-      {/* Divider */}
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />
+      <div style={{ height: 1, background: '#F1F5F9', margin: '0 16px 6px' }} />
 
       {/* Nav */}
-      <nav style={{ padding: '12px 10px', flex: 1 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em', padding: '4px 10px 8px', textTransform: 'uppercase' }}>Menu</p>
+      <nav style={{ padding: '4px 10px', flex: 1, overflowY: 'auto' }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#CBD5E1', letterSpacing: '0.08em', padding: '4px 8px 8px', textTransform: 'uppercase' }}>
+          Menu
+        </p>
         {nav.map(item => {
           const active = pathname === item.href
           const Icon = item.icon
           return (
-            <Link key={item.href} href={item.href} onClick={onClose} style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
-                transition: 'all 0.15s',
-                background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
-                color: active ? '#A5B4FC' : 'rgba(255,255,255,0.45)',
-              }}
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.8)' }}
-                onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.45)' } }}
+            <Link key={item.href} href={item.href} style={{ textDecoration: 'none', display: 'block', marginBottom: 1 }}>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                  transition: 'all 0.12s',
+                  background: active ? '#EEF2FF' : 'transparent',
+                  color: active ? '#4F46E5' : '#64748B',
+                }}
+                onMouseEnter={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'
+                    ;(e.currentTarget as HTMLDivElement).style.color = '#334155'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+                    ;(e.currentTarget as HTMLDivElement).style.color = '#64748B'
+                  }
+                }}
               >
-                <Icon size={16} strokeWidth={active ? 2.5 : 2} />
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  background: active ? '#E0E7FF' : 'transparent',
+                  transition: 'background 0.12s',
+                }}>
+                  <Icon size={15} strokeWidth={active ? 2.2 : 1.9} />
+                </div>
                 <span style={{ fontSize: 13, fontWeight: active ? 600 : 500 }}>{item.label}</span>
-                {active && <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#6366F1' }} />}
               </div>
             </Link>
           )
@@ -81,11 +97,9 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: '12px 16px 20px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 12px' }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.25)' }}>Perfume Business Suite</p>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', marginTop: 2 }}>v1.0 · 2026</p>
-        </div>
+      <div style={{ padding: '8px 16px 16px' }}>
+        <div style={{ height: 1, background: '#F1F5F9', marginBottom: 12 }} />
+        <p style={{ fontSize: 11, color: '#CBD5E1', padding: '0 10px' }}>Perfume Suite · v1.0 · 2026</p>
       </div>
     </div>
   )
@@ -93,22 +107,30 @@ function NavContent({ onClose }: { onClose?: () => void }) {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  const base: React.CSSProperties = {
+    background: '#FFFFFF',
+    borderRight: '1px solid #E2E8F0',
+  }
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="only-desktop" style={{
-        ...sidebarStyle,
-        position: 'fixed', top: 0, left: 0, width: 256, height: '100vh',
+        ...base, position: 'fixed', top: 0, left: 0, width: 240, height: '100vh',
         flexDirection: 'column', zIndex: 40,
       }}>
-        <NavContent />
+        <NavContent pathname={pathname} />
       </aside>
 
       {/* Mobile topbar */}
       <div className="only-mobile" style={{
-        ...sidebarStyle,
-        position: 'fixed', top: 0, left: 0, right: 0, height: 60,
+        background: '#fff',
+        borderBottom: '1px solid #E2E8F0',
+        position: 'fixed', top: 0, left: 0, right: 0, height: 56,
         alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', zIndex: 40,
       }}>
@@ -116,33 +138,33 @@ export default function Sidebar() {
         <button
           onClick={() => setOpen(true)}
           style={{
-            width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'rgba(255,255,255,0.08)', border: 'none',
+            width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#64748B', background: '#F1F5F9', border: 'none', cursor: 'pointer',
           }}
         >
-          <Menu size={18} />
+          <Menu size={17} />
         </button>
       </div>
 
+      {/* Backdrop */}
+      <div
+        onClick={() => setOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 50,
+          opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 0.2s', backdropFilter: 'blur(4px)',
+        }}
+      />
+
       {/* Mobile drawer */}
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50 }}
-            />
-            <motion.div
-              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              style={{ ...sidebarStyle, position: 'fixed', top: 0, left: 0, width: 280, height: '100%', zIndex: 51 }}
-            >
-              <NavContent onClose={() => setOpen(false)} />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <div style={{
+        ...base, position: 'fixed', top: 0, left: 0, width: 260, height: '100%', zIndex: 51,
+        transform: open ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+        boxShadow: open ? '8px 0 32px rgba(15,23,42,.1)' : 'none',
+      }}>
+        <NavContent pathname={pathname} onClose={() => setOpen(false)} />
+      </div>
     </>
   )
 }
