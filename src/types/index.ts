@@ -24,6 +24,7 @@ export interface Variant {
   size_ml: number
   selling_price: number
   stock: number
+  stock_reseller: number
   created_at: string
   product?: Product
   recipes?: Recipe[]
