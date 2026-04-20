@@ -22,9 +22,9 @@ export default function ProductsPage() {
   const [selVariant, setSelVariant] = useState<Variant | null>(null)
   const [pForm, setPForm] = useState({ name: '', description: '' })
   const [vForm, setVForm] = useState({ name: '', size_ml: '', selling_price: '', stock: '' })
-  const [distForm, setDistForm] = useState({ qty: '', harga: '' })
-  const [jualForm, setJualForm] = useState({ qty: '', harga: '', catat: true })
-  const [resellerForm, setResellerForm] = useState({ qty: '', harga: '', catat: true })
+  const [distForm, setDistForm] = useState({ qty: '', harga: '', keterangan: '' })
+  const [jualForm, setJualForm] = useState({ qty: '', harga: '', catat: true, keterangan: '' })
+  const [resellerForm, setResellerForm] = useState({ qty: '', harga: '', catat: true, keterangan: '' })
 
   useEffect(() => { load() }, [])
 
@@ -82,10 +82,10 @@ export default function ProductsPage() {
       sold_at: new Date().toISOString(),
     })
     if (jualForm.catat) {
+      const desc = jualForm.keterangan ? `Jual ${selVariant.name} x${qty} — ${jualForm.keterangan}` : `Jual ${selVariant.name} x${qty}`
       await supabase.from('cashflow').insert({
         type: 'income', category: 'Penjualan',
-        amount: harga * qty,
-        description: `Jual ${selVariant.name} x${qty}`,
+        amount: harga * qty, description: desc,
         transaction_date: new Date().toISOString().split('T')[0],
       })
     }
@@ -100,10 +100,10 @@ export default function ProductsPage() {
     setSaving(true)
     await supabase.from('variants').update({ stock_reseller: (selVariant.stock_reseller || 0) - qty }).eq('id', selVariant.id)
     if (resellerForm.catat) {
+      const desc = resellerForm.keterangan ? `Reseller — ${selVariant.name} x${qty} — ${resellerForm.keterangan}` : `Reseller — ${selVariant.name} x${qty}`
       await supabase.from('cashflow').insert({
         type: 'income', category: 'Penjualan Reseller',
-        amount: harga * qty,
-        description: `Reseller — ${selVariant.name} x${qty}`,
+        amount: harga * qty, description: desc,
         transaction_date: new Date().toISOString().split('T')[0],
       })
     }
@@ -222,17 +222,17 @@ export default function ProductsPage() {
 
                         {/* Action buttons */}
                         <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-                          <button onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '' }); setMode('distribusi') }}
+                          <button onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '', keterangan: '' }); setMode('distribusi') }}
                             title="Distribusi ke Reseller"
                             style={{ flex: 1, height: 28, borderRadius: 7, background: '#EEF2FF', border: 'none', color: '#6366F1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
                             <Send size={11} /> Dist
                           </button>
-                          <button onClick={() => { setSelVariant(v); setJualForm({ qty: '', harga: v.selling_price.toString(), catat: true }); setMode('jual-sendiri') }}
+                          <button onClick={() => { setSelVariant(v); setJualForm({ qty: '', harga: v.selling_price.toString(), catat: true, keterangan: '' }); setMode('jual-sendiri') }}
                             title="Catat Penjualan Sendiri"
                             style={{ flex: 1, height: 28, borderRadius: 7, background: '#F0FDF4', border: 'none', color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
                             <ShoppingBag size={11} /> Jual
                           </button>
-                          <button onClick={() => { setSelVariant(v); setResellerForm({ qty: '', harga: '', catat: true }); setMode('reseller-bayar') }}
+                          <button onClick={() => { setSelVariant(v); setResellerForm({ qty: '', harga: '', catat: true, keterangan: '' }); setMode('reseller-bayar') }}
                             title="Reseller Bayar"
                             style={{ flex: 1, height: 28, borderRadius: 7, background: '#FFFBEB', border: 'none', color: '#B45309', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
                             <Wallet size={11} /> Bayar
@@ -337,6 +337,11 @@ export default function ProductsPage() {
               Total nilai: <strong style={{ color: '#4338CA' }}>{formatRupiah(parseInt(distForm.qty || '0') * parseFloat(distForm.harga || '0'))}</strong>
             </p>
           )}
+          <div>
+            <label style={lbl}>Keterangan (opsional)</label>
+            <input className="field" placeholder="Nama reseller / catatan..." value={distForm.keterangan}
+              onChange={e => setDistForm(f => ({ ...f, keterangan: e.target.value }))} />
+          </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
             <Button variant="ghost" onClick={() => setMode(null)} style={{ flex: 1 }}>Batal</Button>
             <Button onClick={saveDistribusi} loading={saving} style={{ flex: 1 }}>Distribusi</Button>
@@ -374,6 +379,11 @@ export default function ProductsPage() {
               Total: <strong style={{ color: '#16A34A' }}>{formatRupiah(parseInt(jualForm.qty || '0') * parseFloat(jualForm.harga || '0'))}</strong>
             </p>
           )}
+          <div>
+            <label style={lbl}>Keterangan (opsional)</label>
+            <input className="field" placeholder="Nama pembeli / catatan..." value={jualForm.keterangan}
+              onChange={e => setJualForm(f => ({ ...f, keterangan: e.target.value }))} />
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#334155' }}>
             <input type="checkbox" checked={jualForm.catat} onChange={e => setJualForm(f => ({ ...f, catat: e.target.checked }))} />
             Catat otomatis ke Cashflow
@@ -415,6 +425,11 @@ export default function ProductsPage() {
               Total masuk: <strong style={{ color: '#16A34A' }}>{formatRupiah(parseInt(resellerForm.qty || '0') * parseFloat(resellerForm.harga || '0'))}</strong>
             </p>
           )}
+          <div>
+            <label style={lbl}>Keterangan (opsional)</label>
+            <input className="field" placeholder="Nama reseller / catatan..." value={resellerForm.keterangan}
+              onChange={e => setResellerForm(f => ({ ...f, keterangan: e.target.value }))} />
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#334155' }}>
             <input type="checkbox" checked={resellerForm.catat} onChange={e => setResellerForm(f => ({ ...f, catat: e.target.checked }))} />
             Catat otomatis ke Cashflow
