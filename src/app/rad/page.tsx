@@ -184,7 +184,7 @@ export default function RADPage() {
                             { label: 'HPP/botol', value: formatRupiah(hpp), color: '#0F172A', bg: '#F8FAFC' },
                             { label: 'Harga Jual', value: formatRupiah(rad.selling_price), color: '#4338CA', bg: '#EEF2FF' },
                             { label: 'Margin/botol', value: formatRupiah(rad.selling_price - hpp), color: '#16A34A', bg: '#F0FDF4' },
-                            { label: 'Margin %', value: `${rad.selling_price > 0 && hpp > 0 ? (((rad.selling_price - hpp) / hpp) * 100).toFixed(0) : 0}%`, color: '#B45309', bg: '#FFFBEB' },
+                            { label: 'Margin %', value: `${rad.selling_price > 0 ? (((rad.selling_price - hpp) / rad.selling_price) * 100).toFixed(0) : 0}%`, color: '#B45309', bg: '#FFFBEB' },
                           ].map(s => (
                             <div key={s.label} style={{ borderRadius: 10, padding: '10px 12px', textAlign: 'center', background: s.bg }}>
                               <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 4 }}>{s.label}</p>
