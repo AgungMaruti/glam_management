@@ -225,7 +225,7 @@ function ResellerTab() {
                   <NumInput placeholder="15.000" value={ongkirKirim} onChange={setOngkirKirim} />
                 </div>
                 <div>
-                  <label style={lbl}>Jumlah Produk Dikirim (pcs)</label>
+                  <label style={lbl}>Jumlah Produk (pcs)</label>
                   <input className="field" type="number" placeholder="20" min="1" value={minOrder} onChange={e => setMinOrder(e.target.value)} />
                 </div>
               </div>
