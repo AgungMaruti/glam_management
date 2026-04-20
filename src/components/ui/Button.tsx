@@ -26,9 +26,9 @@ const hover = {
 }
 
 const sizes = {
-  sm: { padding: '6px 12px', fontSize: 12, gap: 5, iconSize: 13 },
-  md: { padding: '8px 16px', fontSize: 13, gap: 6, iconSize: 14 },
-  lg: { padding: '11px 20px', fontSize: 14, gap: 7, iconSize: 15 },
+  sm: { padding: '7px 14px', fontSize: 13, gap: 6, iconSize: 14 },
+  md: { padding: '9px 18px', fontSize: 14, gap: 7, iconSize: 15 },
+  lg: { padding: '12px 24px', fontSize: 15, gap: 8, iconSize: 16 },
 }
 
 export default function Button({

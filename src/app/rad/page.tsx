@@ -8,6 +8,8 @@ import { formatRupiah } from '@/lib/utils'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
+import NumInput from '@/components/ui/NumInput'
 
 interface RADItem { name: string; total_qty: string; unit: string; total_cost: string; usage_per_bottle: string }
 interface RADItemDB { id: string; rad_id: string; name: string; total_qty: number; unit: string; total_cost: number; usage_per_bottle: number }
@@ -250,8 +252,10 @@ export default function RADPage() {
                   <div key={i} style={{ display: 'grid', gap: 6, alignItems: 'center', gridTemplateColumns: '2fr 1fr 1fr 1.2fr 1fr 28px', minWidth: 560 }}>
                     <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} placeholder="Nama bahan" value={item.name} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} />
                     <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} type="number" placeholder="1000" value={item.total_qty} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, total_qty: e.target.value } : x))} />
-                    <select className="field" style={{ fontSize: 13, padding: '7px 10px' }} value={item.unit} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, unit: e.target.value } : x))}>{UNITS.map(u => <option key={u}>{u}</option>)}</select>
-                    <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} type="number" placeholder="45000" value={item.total_cost} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, total_cost: e.target.value } : x))} />
+                    <Select value={item.unit} onChange={v => setItems(p => p.map((x, idx) => idx === i ? { ...x, unit: v } : x))}
+                      style={{ fontSize: 13, padding: '7px 10px' }}
+                      options={UNITS.map(u => ({ value: u, label: u }))} />
+                    <NumInput style={{ fontSize: 13, padding: '7px 10px' }} placeholder="45.000" value={item.total_cost} onChange={v => setItems(p => p.map((x, idx) => idx === i ? { ...x, total_cost: v } : x))} />
                     <input className="field" style={{ fontSize: 13, padding: '7px 10px' }} type="number" placeholder="15" value={item.usage_per_bottle} onChange={e => setItems(p => p.map((x, idx) => idx === i ? { ...x, usage_per_bottle: e.target.value } : x))} />
                     <button onClick={() => setItems(p => p.filter((_, idx) => idx !== i))}
                       style={{ width: 28, height: 28, borderRadius: 7, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -292,7 +296,7 @@ export default function RADPage() {
                 <label style={{ ...lbl, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <f.icon size={12} color="#94A3B8" />{f.label}
                 </label>
-                <input className="field" type="number" placeholder="0" value={f.val} onChange={e => f.set(e.target.value)} />
+                <NumInput placeholder="0" value={f.val} onChange={f.set} />
               </div>
             ))}
           </div>

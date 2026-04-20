@@ -2,13 +2,15 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { Boxes, Plus, Trash2, FlaskConical, Zap } from 'lucide-react'
+import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
 import { RawMaterial, Variant, Recipe } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
+import NumInput from '@/components/ui/NumInput'
 
 type Tab = 'materials' | 'recipe' | 'production'
 
@@ -25,6 +27,8 @@ export default function InventoryPage() {
   const [recipeForm, setRecipeForm] = useState({ variant_id: '', raw_material_id: '', quantity_needed: '' })
   const [prodForm, setProdForm] = useState({ variant_id: '', quantity: '', notes: '' })
   const [preview, setPreview] = useState<{ name: string; needed: number; available: number; ok: boolean }[]>([])
+  const [restockMat, setRestockMat] = useState<RawMaterial | null>(null)
+  const [restockForm, setRestockForm] = useState({ qty: '', total_cost: '', catat_cashflow: true })
 
   useEffect(() => { load() }, [])
 
@@ -86,6 +90,39 @@ export default function InventoryPage() {
     await supabase.from('raw_materials').delete().eq('id', id); load()
   }
 
+  async function saveRestock() {
+    if (!restockMat || !restockForm.qty) return
+    setSaving(true)
+    const addQty = parseFloat(restockForm.qty)
+    const newStock = restockMat.stock + addQty
+    const totalCost = parseFloat(restockForm.total_cost) || 0
+
+    // Weighted average cost per unit
+    const newCpu = totalCost > 0
+      ? ((restockMat.cost_per_unit * restockMat.stock) + totalCost) / newStock
+      : restockMat.cost_per_unit
+
+    await supabase.from('raw_materials').update({
+      stock: newStock,
+      cost_per_unit: parseFloat(newCpu.toFixed(2)),
+    }).eq('id', restockMat.id)
+
+    if (restockForm.catat_cashflow && totalCost > 0) {
+      await supabase.from('cashflow').insert({
+        type: 'expense',
+        category: 'Produksi',
+        amount: totalCost,
+        description: `Restock ${restockMat.name} +${addQty} ${restockMat.unit}`,
+        transaction_date: new Date().toISOString(),
+      })
+    }
+
+    setRestockMat(null)
+    setRestockForm({ qty: '', total_cost: '', catat_cashflow: true })
+    setSaving(false)
+    load()
+  }
+
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: 'materials', label: 'Bahan Baku', icon: Boxes },
     { key: 'recipe', label: 'Resep / BOM', icon: FlaskConical },
@@ -99,9 +136,9 @@ export default function InventoryPage() {
       <PageHeader title="Inventori" subtitle="Kelola bahan baku, resep, dan produksi batch" icon={Boxes}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
-            {tab === 'materials' && <Button icon={Plus} size="sm" onClick={() => setShowMatModal(true)}>Bahan Baku</Button>}
-            {tab === 'recipe' && <Button icon={Plus} size="sm" onClick={() => setShowRecipeModal(true)}>Tambah Resep</Button>}
-            {tab === 'production' && <Button icon={Zap} size="sm" onClick={() => setShowProdModal(true)}>Produksi</Button>}
+            {tab === 'materials' && <Button icon={Plus} size="md" onClick={() => setShowMatModal(true)}>Bahan Baku</Button>}
+            {tab === 'recipe' && <Button icon={Plus} size="md" onClick={() => setShowRecipeModal(true)}>Tambah Resep</Button>}
+            {tab === 'production' && <Button icon={Zap} size="md" onClick={() => setShowProdModal(true)}>Produksi</Button>}
           </div>
         }
       />
@@ -128,7 +165,7 @@ export default function InventoryPage() {
                 <p style={{ color: '#94A3B8', fontSize: 14 }}>Belum ada bahan baku</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+              <div className="mat-grid">
                 {materials.map(m => {
                   const critical = m.stock <= m.min_stock
                   const pct = Math.min((m.stock / Math.max(m.min_stock * 3, 1)) * 100, 100)
@@ -141,6 +178,12 @@ export default function InventoryPage() {
                         </div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, marginLeft: 4 }}>
                           {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', fontSize: 9 }}>!</span>}
+                          <button onClick={() => { setRestockMat(m); setRestockForm({ qty: '', total_cost: '', catat_cashflow: true }) }}
+                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1' }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                            <PackagePlus size={11} />
+                          </button>
                           <button onClick={() => deleteMaterial(m.id)}
                             style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
@@ -205,15 +248,82 @@ export default function InventoryPage() {
         )}
       </div>
 
+      {/* Restock Modal */}
+      <Modal open={!!restockMat} onClose={() => setRestockMat(null)} title="Restock Bahan Baku" size="sm">
+        {restockMat && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Info bahan */}
+            <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{restockMat.name}</p>
+                <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>Stok saat ini: <strong style={{ color: '#0F172A' }}>{restockMat.stock} {restockMat.unit}</strong></p>
+              </div>
+              <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{formatRupiah(restockMat.cost_per_unit)}/{restockMat.unit}</span>
+            </div>
+
+            <div>
+              <label style={lbl}>Jumlah yang Dibeli ({restockMat.unit}) *</label>
+              <input className="field" type="number" placeholder="500"
+                value={restockForm.qty} onChange={e => setRestockForm(f => ({ ...f, qty: e.target.value }))} autoFocus />
+            </div>
+
+            <div>
+              <label style={lbl}>Total Harga Beli (Rp)</label>
+              <NumInput placeholder="50.000" value={restockForm.total_cost}
+                onChange={v => setRestockForm(f => ({ ...f, total_cost: v }))} />
+              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Opsional — untuk update harga per {restockMat.unit} otomatis.</p>
+            </div>
+
+            {/* Preview update */}
+            {restockForm.qty && (
+              <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 14px', border: '1px solid #BBF7D0' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#16A34A', marginBottom: 8 }}>Setelah Restock</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: '#64748B' }}>Stok baru</span>
+                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{restockMat.stock + (parseFloat(restockForm.qty) || 0)} {restockMat.unit}</span>
+                </div>
+                {restockForm.total_cost && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 4 }}>
+                    <span style={{ color: '#64748B' }}>Harga/unit (rata-rata)</span>
+                    <span style={{ fontWeight: 700, color: '#4338CA' }}>
+                      {formatRupiah(parseFloat((
+                        (restockMat.cost_per_unit * restockMat.stock + parseFloat(restockForm.total_cost)) /
+                        (restockMat.stock + parseFloat(restockForm.qty))
+                      ).toFixed(2)))}/{restockMat.unit}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Catat ke cashflow */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px', borderRadius: 10, background: restockForm.catat_cashflow ? '#EEF2FF' : '#F8FAFC', border: `1.5px solid ${restockForm.catat_cashflow ? '#C7D2FE' : '#E2E8F0'}`, transition: 'all .15s' }}>
+              <input type="checkbox" checked={restockForm.catat_cashflow}
+                onChange={e => setRestockForm(f => ({ ...f, catat_cashflow: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: '#6366F1', cursor: 'pointer' }} />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Catat ke Cashflow</p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>Auto-input pengeluaran restock ke laporan keuangan</p>
+              </div>
+            </label>
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <Button variant="ghost" onClick={() => setRestockMat(null)} style={{ flex: 1 }}>Batal</Button>
+              <Button icon={PackagePlus} onClick={saveRestock} loading={saving} style={{ flex: 1 }}
+                disabled={!restockForm.qty}>Simpan Restock</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Material Modal */}
       <Modal open={showMatModal} onClose={() => setShowMatModal(false)} title="Tambah Bahan Baku">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={lbl}>Nama Bahan *</label><input className="field" placeholder="Bibit Parfum" value={matForm.name} onChange={e => setMatForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={lbl}>Satuan</label>
-              <select className="field" value={matForm.unit} onChange={e => setMatForm(f => ({ ...f, unit: e.target.value }))}>
-                {['ml', 'gram', 'pcs', 'liter', 'kg'].map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
+              <Select value={matForm.unit} onChange={v => setMatForm(f => ({ ...f, unit: v }))}
+                options={['ml', 'gram', 'pcs', 'liter', 'kg'].map(u => ({ value: u, label: u }))} />
             </div>
             <div><label style={lbl}>Stok Awal ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.stock} onChange={e => {
               const stock = e.target.value
@@ -228,9 +338,8 @@ export default function InventoryPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={lbl}>Harga Beli Total (Rp)</label>
-                <input className="field" type="number" placeholder="17000" value={matForm.total_cost}
-                  onChange={e => {
-                    const total = e.target.value
+                <NumInput placeholder="17.000" value={matForm.total_cost}
+                  onChange={total => {
                     const cpu = total && matForm.stock ? (parseFloat(total) / parseFloat(matForm.stock)).toFixed(2) : ''
                     setMatForm(f => ({ ...f, total_cost: total, cost_per_unit: cpu }))
                   }} />
@@ -278,16 +387,14 @@ export default function InventoryPage() {
       <Modal open={showRecipeModal} onClose={() => setShowRecipeModal(false)} title="Tambah Resep / BOM">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={lbl}>Varian *</label>
-            <select className="field" value={recipeForm.variant_id} onChange={e => setRecipeForm(f => ({ ...f, variant_id: e.target.value }))}>
-              <option value="">-- Pilih Varian --</option>
-              {variants.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+            <Select value={recipeForm.variant_id} onChange={v => setRecipeForm(f => ({ ...f, variant_id: v }))}
+              placeholder="-- Pilih Varian --"
+              options={[{ value: '', label: '-- Pilih Varian --' }, ...variants.map(v => ({ value: v.id, label: v.name }))]} />
           </div>
           <div><label style={lbl}>Bahan Baku *</label>
-            <select className="field" value={recipeForm.raw_material_id} onChange={e => setRecipeForm(f => ({ ...f, raw_material_id: e.target.value }))}>
-              <option value="">-- Pilih Bahan --</option>
-              {materials.map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
-            </select>
+            <Select value={recipeForm.raw_material_id} onChange={v => setRecipeForm(f => ({ ...f, raw_material_id: v }))}
+              placeholder="-- Pilih Bahan --"
+              options={[{ value: '', label: '-- Pilih Bahan --' }, ...materials.map(m => ({ value: m.id, label: `${m.name} (${m.unit})` }))]} />
           </div>
           <div><label style={lbl}>Jumlah per Botol *</label><input className="field" type="number" placeholder="20" value={recipeForm.quantity_needed} onChange={e => setRecipeForm(f => ({ ...f, quantity_needed: e.target.value }))} /></div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
@@ -301,10 +408,9 @@ export default function InventoryPage() {
       <Modal open={showProdModal} onClose={() => setShowProdModal(false)} title="Produksi Batch">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={lbl}>Varian *</label>
-            <select className="field" value={prodForm.variant_id} onChange={e => setProdForm(f => ({ ...f, variant_id: e.target.value }))}>
-              <option value="">-- Pilih Varian --</option>
-              {variants.map(v => <option key={v.id} value={v.id}>{v.name} (stok: {v.stock} pcs)</option>)}
-            </select>
+            <Select value={prodForm.variant_id} onChange={v => setProdForm(f => ({ ...f, variant_id: v }))}
+              placeholder="-- Pilih Varian --"
+              options={[{ value: '', label: '-- Pilih Varian --' }, ...variants.map(v => ({ value: v.id, label: `${v.name} (stok: ${v.stock} pcs)` }))]} />
           </div>
           <div><label style={lbl}>Jumlah Produksi *</label><input className="field" type="number" placeholder="15" value={prodForm.quantity} onChange={e => setProdForm(f => ({ ...f, quantity: e.target.value }))} /></div>
           <div><label style={lbl}>Catatan</label><input className="field" placeholder="Opsional" value={prodForm.notes} onChange={e => setProdForm(f => ({ ...f, notes: e.target.value }))} /></div>

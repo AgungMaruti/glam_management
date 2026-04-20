@@ -3,11 +3,13 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useRef } from 'react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { Wallet, TrendingUp, ShoppingBag, AlertTriangle, LayoutDashboard, Edit2, Check, X } from 'lucide-react'
+import { Wallet, TrendingUp, ShoppingBag, AlertTriangle, LayoutDashboard, Edit2, Check, X, PiggyBank, TrendingDown, Percent, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
 import StatCard from '@/components/ui/StatCard'
 import PageHeader from '@/components/ui/PageHeader'
+import Modal from '@/components/ui/Modal'
+import NumInput from '@/components/ui/NumInput'
 
 const Tip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
@@ -32,8 +34,8 @@ function EditableRow({ label, value, onSave, color }: { label: string; value: nu
   const confirm = () => { onSave(parseFloat(draft) || 0); setEditing(false) }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #F1F5F9' }}>
-      <span style={{ fontSize: 13, color: '#64748B' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #F1F5F9' }}>
+      <span style={{ fontSize: 14, color: '#64748B' }}>{label}</span>
       {editing ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <input ref={ref} type="number" value={draft}
@@ -46,7 +48,7 @@ function EditableRow({ label, value, onSave, color }: { label: string; value: nu
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setEditing(true)}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: color || '#0F172A' }}>{formatRupiah(value)}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: color || '#0F172A' }}>{formatRupiah(value)}</span>
           <Edit2 size={12} color="#CBD5E1" />
         </div>
       )}
@@ -66,6 +68,13 @@ export default function DashboardPage() {
   const [gaji, setGaji] = useState(0)
   const [marketing, setMarketing] = useState(0)
   const [operasional, setOperasional] = useState(0)
+  const [modalBisnis, setModalBisnis] = useState(0)
+  const [showModalBisnisModal, setShowModalBisnisModal] = useState(false)
+  const [modalInput, setModalInput] = useState('')
+  const [tambahInput, setTambahInput] = useState('')
+  const [catatCashflow, setCatatCashflow] = useState(true)
+  const [savingModal, setSavingModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'set' | 'tambah'>('set')
 
   useEffect(() => { load() }, [])
 
@@ -82,10 +91,12 @@ export default function DashboardPage() {
       const materials = mats.data || []
       const sett = settings.data || []
 
-      const sp = sett.find((s: any) => s.key === 'selling_price')
-      const hp = sett.find((s: any) => s.key === 'hpp_per_unit')
+      const sp  = sett.find((s: any) => s.key === 'selling_price')
+      const hp  = sett.find((s: any) => s.key === 'hpp_per_unit')
+      const mb  = sett.find((s: any) => s.key === 'modal_bisnis')
       if (sp) setSellingPrice(parseFloat(sp.value))
       if (hp) setHpp(parseFloat(hp.value))
+      if (mb) setModalBisnis(parseFloat(mb.value))
 
       const income = cashflows.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
       const expense = cashflows.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
@@ -118,6 +129,35 @@ export default function DashboardPage() {
     await supabase.from('settings').upsert({ key, value: value.toString(), updated_at: new Date().toISOString() })
   }
 
+  async function saveModalBisnis() {
+    setSavingModal(true)
+    if (modalMode === 'set') {
+      const val = parseFloat(modalInput) || 0
+      await supabase.from('settings').upsert({ key: 'modal_bisnis', value: val.toString(), updated_at: new Date().toISOString() })
+      setModalBisnis(val)
+    } else {
+      const tambah = parseFloat(tambahInput) || 0
+      const newTotal = modalBisnis + tambah
+      await supabase.from('settings').upsert({ key: 'modal_bisnis', value: newTotal.toString(), updated_at: new Date().toISOString() })
+      if (catatCashflow && tambah > 0) {
+        await supabase.from('cashflow').insert({
+          type: 'income', category: 'Penambahan Modal',
+          amount: tambah,
+          description: `Tambah modal bisnis`,
+          transaction_date: new Date().toISOString(),
+        })
+      }
+      setModalBisnis(newTotal)
+    }
+    setModalInput(''); setTambahInput('')
+    setShowModalBisnisModal(false); setSavingModal(false)
+    load()
+  }
+
+  const kasSekarang = stats.totalIncome - stats.totalExpense
+  const profitBersih = modalBisnis > 0 ? kasSekarang - modalBisnis : null
+  const roi = modalBisnis > 0 && profitBersih !== null ? (profitBersih / modalBisnis) * 100 : null
+
   const grossRev = sellingPrice * totalSold
   const totalHpp = hpp * totalSold
   const grossProfit = grossRev - totalHpp
@@ -138,19 +178,178 @@ export default function DashboardPage() {
         <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
       </div>
 
+      {/* Modal & Profit Tracker */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Modal & Profit Tracker</h2>
+            <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>Pantau modal kamu vs hasil yang udah didapat</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {modalBisnis > 0 && (
+              <button onClick={() => { setModalMode('tambah'); setTambahInput(''); setCatatCashflow(true); setShowModalBisnisModal(true) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#16A34A', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#DCFCE7'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4'}>
+                <Plus size={13} /> Tambah Modal
+              </button>
+            )}
+            <button onClick={() => { setModalMode('set'); setModalInput(modalBisnis > 0 ? modalBisnis.toString() : ''); setShowModalBisnisModal(true) }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#E0E7FF'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'}>
+              <Edit2 size={12} /> {modalBisnis > 0 ? 'Edit Modal' : 'Set Modal Awal'}
+            </button>
+          </div>
+        </div>
+
+        {modalBisnis === 0 ? (
+          <div style={{ padding: '28px 20px', textAlign: 'center' }}>
+            <PiggyBank size={32} color="#E2E8F0" style={{ margin: '0 auto 10px' }} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#94A3B8', marginBottom: 4 }}>Belum ada modal yang dicatat</p>
+            <p style={{ fontSize: 13, color: '#CBD5E1' }}>Set modal awal kamu untuk mulai tracking profit & ROI</p>
+          </div>
+        ) : (
+          <div style={{ padding: '16px 20px' }}>
+            <div className="two-col-sm" style={{ gap: 12 }}>
+              {/* Modal */}
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <PiggyBank size={13} color="#6366F1" />
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>Total Modal Ditanam</p>
+                </div>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#4338CA', letterSpacing: '-0.03em' }}>{formatRupiah(modalBisnis)}</p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>Uang yang kamu investasikan ke bisnis</p>
+              </div>
+
+              {/* Kas */}
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Wallet size={13} color="#10B981" />
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>Kas Bisnis Saat Ini</p>
+                </div>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#059669', letterSpacing: '-0.03em' }}>{formatRupiah(kasSekarang)}</p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>Total uang yang ada sekarang</p>
+              </div>
+
+              {/* Profit */}
+              <div style={{ background: profitBersih !== null && profitBersih >= 0 ? '#F0FDF4' : '#FEF2F2', borderRadius: 10, padding: '14px 16px', border: `1px solid ${profitBersih !== null && profitBersih >= 0 ? '#BBF7D0' : '#FECACA'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: profitBersih !== null && profitBersih >= 0 ? '#DCFCE7' : '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <TrendingUp size={13} color={profitBersih !== null && profitBersih >= 0 ? '#16A34A' : '#DC2626'} />
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>Profit Bersih</p>
+                </div>
+                <p style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', color: profitBersih !== null && profitBersih >= 0 ? '#16A34A' : '#DC2626' }}>
+                  {profitBersih !== null ? (profitBersih >= 0 ? '+' : '') + formatRupiah(profitBersih) : '-'}
+                </p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>Kas sekarang dikurangi modal awal</p>
+              </div>
+
+              {/* ROI */}
+              <div style={{ background: roi !== null && roi >= 0 ? '#F5F3FF' : '#FEF2F2', borderRadius: 10, padding: '14px 16px', border: `1px solid ${roi !== null && roi >= 0 ? '#DDD6FE' : '#FECACA'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: roi !== null && roi >= 0 ? '#EDE9FE' : '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Percent size={13} color={roi !== null && roi >= 0 ? '#7C3AED' : '#DC2626'} />
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>ROI (Return on Investment)</p>
+                </div>
+                <p style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', color: roi !== null && roi >= 0 ? '#7C3AED' : '#DC2626' }}>
+                  {roi !== null ? `${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%` : '-'}
+                </p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>
+                  {roi !== null && roi >= 0 ? `Modal kamu sudah balik ${(roi / 100 + 1).toFixed(2)}× lipat` : 'Modal belum balik'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Bisnis Dialog */}
+      <Modal open={showModalBisnisModal} onClose={() => setShowModalBisnisModal(false)} title={modalMode === 'set' ? (modalBisnis > 0 ? 'Edit Modal Bisnis' : 'Set Modal Awal') : 'Tambah Modal'} size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {modalMode === 'set' ? (
+            <>
+              <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#3730A3', marginBottom: 4 }}>Apa itu Modal Bisnis?</p>
+                <p style={{ fontSize: 12, color: '#4338CA', lineHeight: 1.6 }}>Total uang yang kamu investasikan ke bisnis ini sejak awal. Digunakan untuk menghitung profit bersih dan ROI kamu.</p>
+              </div>
+              <div>
+                <label style={lbl}>Total Modal yang Ditanam (Rp) *</label>
+                <NumInput placeholder="1.000.000" value={modalInput} onChange={setModalInput} autoFocus />
+              </div>
+              {modalInput && (
+                <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 14px', border: '1px solid #BBF7D0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: '#64748B', marginBottom: 4 }}>Kas Saat Ini</p>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>{formatRupiah(kasSekarang)}</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: '#64748B', marginBottom: 4 }}>Profit Bersih</p>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: kasSekarang - (parseFloat(modalInput) || 0) >= 0 ? '#16A34A' : '#DC2626' }}>
+                      {formatRupiah(kasSekarang - (parseFloat(modalInput) || 0))}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Modal saat ini</p>
+                  <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>Setelah tambahan, modal jadi</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: '#4338CA' }}>{formatRupiah(modalBisnis)}</p>
+                  {tambahInput && <p style={{ fontSize: 13, fontWeight: 700, color: '#16A34A', marginTop: 2 }}>→ {formatRupiah(modalBisnis + (parseFloat(tambahInput) || 0))}</p>}
+                </div>
+              </div>
+              <div>
+                <label style={lbl}>Jumlah Tambahan Modal (Rp) *</label>
+                <NumInput placeholder="500.000" value={tambahInput} onChange={setTambahInput} autoFocus />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px', borderRadius: 10, background: catatCashflow ? '#EEF2FF' : '#F8FAFC', border: `1.5px solid ${catatCashflow ? '#C7D2FE' : '#E2E8F0'}`, transition: 'all .15s' }}>
+                <input type="checkbox" checked={catatCashflow} onChange={e => setCatatCashflow(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: '#6366F1', cursor: 'pointer' }} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Catat ke Cashflow</p>
+                  <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>Auto-input sebagai pemasukan "Penambahan Modal"</p>
+                </div>
+              </label>
+            </>
+          )}
+          <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+            <button onClick={() => setShowModalBisnisModal(false)}
+              style={{ flex: 1, padding: '9px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#fff', fontSize: 14, fontWeight: 600, color: '#64748B', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Batal
+            </button>
+            <button onClick={saveModalBisnis} disabled={savingModal || (modalMode === 'set' ? !modalInput : !tambahInput)}
+              style={{ flex: 1, padding: '9px', borderRadius: 9, border: 'none', background: '#6366F1', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (savingModal || (modalMode === 'set' ? !modalInput : !tambahInput)) ? 0.5 : 1 }}>
+              {savingModal ? 'Menyimpan...' : 'Simpan'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Profit Breakdown */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>Profit Breakdown</h2>
-            <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>Klik nilai untuk edit · {totalSold} pcs terjual</p>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Profit Breakdown</h2>
+            <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>Klik nilai untuk edit · {totalSold} pcs terjual</p>
           </div>
-          <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>Margin {margin}%</span>
+          <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA', fontSize: 12, padding: '4px 10px' }}>Margin {margin}%</span>
         </div>
-        <div style={{ padding: '12px 16px' }} className="two-col-md">
+        <div style={{ padding: '16px 20px' }} className="two-col-md">
           {/* Per unit */}
-          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Per Botol</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '14px 16px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Per Botol</p>
             <EditableRow label="Harga Jual / pcs" value={sellingPrice} color="#4338CA" onSave={v => { setSellingPrice(v); saveSetting('selling_price', v) }} />
             <EditableRow label="HPP / pcs" value={hpp} onSave={v => { setHpp(v); saveSetting('hpp_per_unit', v) }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, marginTop: 2 }}>
@@ -159,8 +358,8 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* Total */}
-          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>Total ({totalSold} pcs)</p>
+          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '14px 16px', border: '1px solid #C7D2FE' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Total ({totalSold} pcs)</p>
             <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {[
                 { label: 'Gross Revenue', value: grossRev, color: '#0F172A' },
@@ -179,8 +378,8 @@ export default function DashboardPage() {
               {marketing > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Marketing</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(marketing)}</span></div>}
               {operasional > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Operasional</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(operasional)}</span></div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #C7D2FE', paddingTop: 8, marginTop: 2 }}>
-                <span style={{ fontWeight: 700, color: '#0F172A', fontSize: 14 }}>NET PROFIT</span>
-                <span style={{ fontWeight: 800, fontSize: 16, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</span>
+                <span style={{ fontWeight: 700, color: '#0F172A', fontSize: 15 }}>NET PROFIT</span>
+                <span style={{ fontWeight: 800, fontSize: 18, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</span>
               </div>
             </div>
           </div>
@@ -188,55 +387,59 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="two-col-xl">
-        <div className="card" style={{ padding: '12px 16px' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', marginBottom: 1 }}>Produk Paling Laku</h3>
-          <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Berdasarkan total penjualan</p>
-          {salesChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={salesChart} barSize={28}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                <Tooltip content={<Tip />} cursor={{ fill: '#F5F4F0' }} />
-                <Bar dataKey="total" name="Penjualan" fill="#6366F1" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <EmptyChart label="Belum ada data penjualan" />}
+      <div className="two-col-xl" style={{ flex: 1 }}>
+        <div className="card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 2 }}>Produk Paling Laku</h3>
+          <p style={{ fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>Berdasarkan total penjualan</p>
+          <div style={{ flex: 1, minHeight: 200 }}>
+            {salesChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={salesChart} barSize={28}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip content={<Tip />} cursor={{ fill: '#F8FAFC' }} />
+                  <Bar dataKey="total" name="Penjualan" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart label="Belum ada data penjualan" />}
+          </div>
         </div>
 
-        <div className="card" style={{ padding: '12px 16px' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', marginBottom: 1 }}>Tren Cashflow</h3>
-          <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>6 bulan terakhir</p>
-          {cfChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={cfChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                <Line type="monotone" dataKey="income" name="Pemasukan" stroke="#16A34A" strokeWidth={2} dot={{ fill: '#16A34A', r: 3, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="expense" name="Pengeluaran" stroke="#DC2626" strokeWidth={2} dot={{ fill: '#DC2626', r: 3, strokeWidth: 0 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : <EmptyChart label="Belum ada data cashflow" />}
+        <div className="card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 2 }}>Tren Cashflow</h3>
+          <p style={{ fontSize: 12, color: '#94A3B8', marginBottom: 16 }}>6 bulan terakhir</p>
+          <div style={{ flex: 1, minHeight: 200 }}>
+            {cfChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={cfChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip content={<Tip />} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="income" name="Pemasukan" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 3, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="expense" name="Pengeluaran" stroke="#EF4444" strokeWidth={2} dot={{ fill: '#EF4444', r: 3, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <EmptyChart label="Belum ada data cashflow" />}
+          </div>
         </div>
       </div>
 
       {/* Critical stock */}
       {criticalMaterials.length > 0 && (
         <div className="card" style={{ overflow: 'hidden', borderColor: '#FCA5A5' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <AlertTriangle size={15} color="#DC2626" />
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #FEE2E2', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AlertTriangle size={16} color="#DC2626" />
             </div>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#B91C1C' }}>Stok Kritis</p>
-              <p style={{ fontSize: 11, color: '#F87171' }}>Segera lakukan restock</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#B91C1C' }}>Stok Kritis</p>
+              <p style={{ fontSize: 12, color: '#F87171' }}>Segera lakukan restock</p>
             </div>
           </div>
-          <div style={{ padding: '12px 16px', display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+          <div style={{ padding: '12px 16px', display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
             {criticalMaterials.map(m => (
               <div key={m.id} style={{ background: '#FEF2F2', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -253,8 +456,17 @@ export default function DashboardPage() {
   )
 }
 
+const lbl: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 6 }
+
 function EmptyChart({ label }: { label: string }) {
-  return <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ fontSize: 13, color: '#CBD5E1' }}>{label}</p></div>
+  return (
+    <div style={{ height: '100%', minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 10, background: '#F8FAFC', border: '1.5px dashed #E2E8F0' }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <p style={{ fontSize: 12, color: '#CBD5E1', fontWeight: 500 }}>{label}</p>
+    </div>
+  )
 }
 
 function Spinner() {

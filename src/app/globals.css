@@ -30,13 +30,18 @@ body {
 .app-main { padding-top: var(--th); min-height: 100vh; }
 @media (min-width: 1024px) { .app-main { padding-top: 0; margin-left: var(--sw); } }
 
-.page-wrap { padding: 16px; max-width: 1400px; margin: 0 auto; }
-@media (min-width: 640px)  { .page-wrap { padding: 20px; } }
-@media (min-width: 1024px) { .page-wrap { padding: 24px 32px; } }
+.page-wrap { padding: 16px; max-width: 1440px; margin: 0 auto; }
+@media (min-width: 640px)  { .page-wrap { padding: 24px; } }
+@media (min-width: 1024px) { .page-wrap { padding: 32px 48px; } }
 
-.page-sections { display: flex; flex-direction: column; gap: 12px; }
+.page-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: calc(100dvh - var(--th) - 32px);
+}
 @media (min-width: 640px) { .page-sections { gap: 16px; } }
-@media (min-width: 768px) { .page-sections { gap: 20px; } }
+@media (min-width: 1024px) { .page-sections { gap: 24px; min-height: calc(100dvh - 64px); } }
 
 /* ── CARD ───────────────────────── */
 .card {
@@ -64,12 +69,6 @@ body {
 .field:focus { border-color: #6366F1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
 .field::placeholder { color: #94A3B8; }
 
-select.field {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 34px;
-}
 
 /* ── BADGE ──────────────────────── */
 .badge {
@@ -88,14 +87,14 @@ select.field {
   display: flex;
   gap: 2px;
   background: #F1F5F9;
-  border-radius: 10px;
-  padding: 3px;
+  border-radius: 11px;
+  padding: 4px;
   width: fit-content;
 }
 .tab-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 14px; border-radius: 7px;
-  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
   color: #64748B; cursor: pointer;
   transition: all .15s; border: none;
   background: transparent; font-family: var(--font);
@@ -126,19 +125,35 @@ hr.divider { border: none; border-top: 1px solid var(--border); }
 @media (min-width: 640px) { .show-sm-flex { display: flex; } }
 
 /* ── GRIDS ──────────────────────── */
-.stats-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
-@media (min-width: 1280px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+.stats-grid > *, .two-col-sm > *, .two-col-md > *, .two-col-xl > *,
+.three-col > *, .mat-grid > *, .four-col-md > * { min-width: 0; }
 
-.three-col { display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+.stats-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 1024px) { .stats-grid { gap: 16px; grid-template-columns: repeat(4, 1fr); } }
+
+.three-col { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 480px) { .three-col { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .three-col { gap: 16px; } }
+
+.two-col-sm { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 360px) { .two-col-sm { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .two-col-sm { gap: 12px; } }
+
+.mat-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 640px)  { .mat-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1024px) { .mat-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+@media (min-width: 1280px) { .mat-grid { grid-template-columns: repeat(5, 1fr); } }
 
 .two-col-md { display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 768px) { .two-col-md { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1024px) { .two-col-md { gap: 20px; } }
 
 .two-col-xl { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 1280px) { .two-col-xl { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1280px) { .two-col-xl { grid-template-columns: 1fr 1fr; gap: 20px; } }
 
 .four-col-md { display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); }
 @media (min-width: 768px) { .four-col-md { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .four-col-md { gap: 16px; } }
 
 /* ── MODAL ──────────────────────── */
 .modal-wrap { align-items: flex-end; padding: 0; }

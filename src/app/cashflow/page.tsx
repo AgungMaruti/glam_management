@@ -9,6 +9,8 @@ import { Cashflow, Variant } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
+import NumInput from '@/components/ui/NumInput'
 
 type Period = 'daily' | 'weekly' | 'monthly' | 'all'
 
@@ -284,9 +286,9 @@ export default function CashflowPage() {
       <PageHeader title="Cashflow" subtitle="Pantau arus keuangan bisnis kamu" icon={TrendingUp}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
-            <span className="show-sm"><Button variant="ghost" size="sm" icon={Printer} onClick={() => setShowPrintModal(true)}>Cetak</Button></span>
-            <span className="show-sm"><Button variant="outline" size="sm" icon={ShoppingBag} onClick={() => setShowSaleModal(true)}>Catat Penjualan</Button></span>
-            <Button icon={Plus} size="sm" onClick={() => setShowModal(true)}>Transaksi</Button>
+            <span className="show-sm"><Button variant="ghost" size="md" icon={Printer} onClick={() => setShowPrintModal(true)}>Cetak</Button></span>
+            <span className="show-sm"><Button variant="outline" size="md" icon={ShoppingBag} onClick={() => setShowSaleModal(true)}>Catat Penjualan</Button></span>
+            <Button icon={Plus} size="md" onClick={() => setShowModal(true)}>Transaksi</Button>
           </div>
         }
       />
@@ -434,12 +436,8 @@ export default function CashflowPage() {
           {/* Category filter */}
           <div>
             <label style={lbl}>Kategori</label>
-            <select className="field" value={printCat} onChange={e => setPrintCat(e.target.value)}>
-              <option value="all">Semua Kategori</option>
-              {(printType === 'income' ? INCOME_CATS : printType === 'expense' ? EXPENSE_CATS : ALL_CATS).map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <Select value={printCat} onChange={v => setPrintCat(v)}
+              options={[{ value: 'all', label: 'Semua Kategori' }, ...(printType === 'income' ? INCOME_CATS : printType === 'expense' ? EXPENSE_CATS : ALL_CATS).map(c => ({ value: c, label: c }))]} />
           </div>
 
           {/* Preview summary */}
@@ -468,7 +466,7 @@ export default function CashflowPage() {
           </div>
           <div>
             <label style={lbl}>Jumlah Saldo Awal (Rp) *</label>
-            <input className="field" type="number" placeholder="Contoh: 500000" value={saldoInput} onChange={e => setSaldoInput(e.target.value)} autoFocus />
+            <NumInput placeholder="500.000" value={saldoInput} onChange={setSaldoInput} autoFocus />
           </div>
           {saldoInput && (
             <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1px solid #BBF7D0', textAlign: 'center' }}>
@@ -496,13 +494,12 @@ export default function CashflowPage() {
           </div>
           <div>
             <label style={lbl}>Kategori *</label>
-            <select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-              <option value="">-- Pilih Kategori --</option>
-              {(form.type === 'income' ? INCOME_CATS : EXPENSE_CATS).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <Select value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))}
+              placeholder="-- Pilih Kategori --"
+              options={[{ value: '', label: '-- Pilih Kategori --' }, ...(form.type === 'income' ? INCOME_CATS : EXPENSE_CATS).map(c => ({ value: c, label: c }))]} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label style={lbl}>Jumlah (Rp) *</label><input className="field" type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+            <div><label style={lbl}>Jumlah (Rp) *</label><NumInput placeholder="0" value={form.amount} onChange={v => setForm(f => ({ ...f, amount: v }))} /></div>
             <div><label style={lbl}>Tanggal</label><input className="field" type="date" value={form.transaction_date} onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))} /></div>
           </div>
           <div><label style={lbl}>Keterangan</label><input className="field" placeholder="Opsional..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
@@ -517,15 +514,14 @@ export default function CashflowPage() {
       <Modal open={showSaleModal} onClose={() => setShowSaleModal(false)} title="Catat Penjualan">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={lbl}>Varian yang Dijual *</label>
-            <select className="field" value={saleForm.variant_id}
-              onChange={e => { const v = variants.find(v => v.id === e.target.value); setSaleForm(f => ({ ...f, variant_id: e.target.value, unit_price: v?.selling_price.toString() || '' })) }}>
-              <option value="">-- Pilih Varian --</option>
-              {variants.map(v => <option key={v.id} value={v.id}>{v.name} — stok: {v.stock} pcs</option>)}
-            </select>
+            <Select value={saleForm.variant_id}
+              onChange={v => { const found = variants.find(x => x.id === v); setSaleForm(f => ({ ...f, variant_id: v, unit_price: found?.selling_price.toString() || '' })) }}
+              placeholder="-- Pilih Varian --"
+              options={[{ value: '', label: '-- Pilih Varian --' }, ...variants.map(v => ({ value: v.id, label: `${v.name} — stok: ${v.stock} pcs` }))]} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={lbl}>Jumlah (pcs) *</label><input className="field" type="number" placeholder="1" value={saleForm.quantity} onChange={e => setSaleForm(f => ({ ...f, quantity: e.target.value }))} /></div>
-            <div><label style={lbl}>Harga/pcs (Rp) *</label><input className="field" type="number" placeholder="0" value={saleForm.unit_price} onChange={e => setSaleForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
+            <div><label style={lbl}>Harga/pcs (Rp) *</label><NumInput placeholder="0" value={saleForm.unit_price} onChange={v => setSaleForm(f => ({ ...f, unit_price: v }))} /></div>
           </div>
           {saleForm.quantity && saleForm.unit_price && (
             <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 16px', textAlign: 'center', border: '1px solid #BBF7D0' }}>

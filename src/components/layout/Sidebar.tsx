@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X } from 'lucide-react'
+import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X, ShoppingCart } from 'lucide-react'
 
 const nav = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const nav = [
   { href: '/inventory', label: 'Inventori', icon: Boxes },
   { href: '/rad', label: 'RAD & HPP', icon: Calculator },
   { href: '/cashflow', label: 'Cashflow', icon: TrendingUp },
+  { href: '/pricing', label: 'Kalkulator Harga', icon: ShoppingCart },
 ]
 
 function Brand() {

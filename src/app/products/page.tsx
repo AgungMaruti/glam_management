@@ -94,7 +94,7 @@ export default function ProductsPage() {
                   {product.description && <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.description}</p>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <span className="show-sm"><Button variant="soft" size="sm" icon={Plus}
+                  <span className="show-sm"><Button variant="soft" size="md" icon={Plus}
                     onClick={() => { setSelProduct(product); setVForm({ name: '', size_ml: '', selling_price: '', stock: '' }); setMode('add-variant') }}>Varian</Button></span>
                   <button onClick={() => { setSelProduct(product); setVForm({ name: '', size_ml: '', selling_price: '', stock: '' }); setMode('add-variant') }}
                     style={{ width: 32, height: 32, borderRadius: 8, background: '#EEF2FF', border: 'none', color: '#6366F1', cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}
@@ -119,7 +119,7 @@ export default function ProductsPage() {
                       style={{ fontSize: 13, color: '#6366F1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginTop: 6 }}>+ Tambah varian</button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                  <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
                     {product.variants.map(v => (
                       <div key={v.id} style={{ background: '#F8FAFC', borderRadius: 11, padding: '12px 14px', border: '1px solid #E2E8F0', position: 'relative' }}>
                         {/* Actions */}
