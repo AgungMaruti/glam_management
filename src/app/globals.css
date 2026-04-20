@@ -124,6 +124,10 @@ hr.divider { border: none; border-top: 1px solid var(--border); }
 .show-sm-flex { display: none; }
 @media (min-width: 640px) { .show-sm-flex { display: flex; } }
 
+/* ── STAT CARD ──────────────────── */
+.stat-card { padding: 16px; }
+@media (min-width: 640px) { .stat-card { padding: 20px 24px; } }
+
 /* ── GRIDS ──────────────────────── */
 .stats-grid > *, .two-col-sm > *, .two-col-md > *, .two-col-xl > *,
 .three-col > *, .mat-grid > *, .four-col-md > * { min-width: 0; }
