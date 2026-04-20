@@ -70,6 +70,7 @@ export default function DashboardPage() {
   const [operasional, setOperasional] = useState(0)
   const [modalBisnis, setModalBisnis] = useState(0)
   const [showModalBisnisModal, setShowModalBisnisModal] = useState(false)
+  const [showSimulasi, setShowSimulasi] = useState(false)
   const [modalInput, setModalInput] = useState('')
   const [tambahInput, setTambahInput] = useState('')
   const [catatCashflow, setCatatCashflow] = useState(true)
@@ -450,6 +451,29 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Floating Simulasi Button */}
+      {profitBersih !== null && profitBersih > 0 && hpp > 0 && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+          {showSimulasi && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', boxShadow: '0 8px 32px rgba(15,23,42,.15)', border: '1px solid #E2E8F0', width: 240 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Simulasi Produksi</p>
+              <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 12 }}>
+                Dengan profit bersih <strong style={{ color: '#16A34A' }}>{formatRupiah(profitBersih)}</strong>, kamu bisa produksi lagi:
+              </p>
+              <div style={{ background: '#F0FDF4', borderRadius: 12, padding: '14px 16px', textAlign: 'center', border: '1px solid #BBF7D0' }}>
+                <p style={{ fontSize: 36, fontWeight: 800, color: '#16A34A', lineHeight: 1 }}>{Math.floor(profitBersih / hpp)}</p>
+                <p style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>pcs produk</p>
+              </div>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 10 }}>HPP {formatRupiah(hpp)}/pcs · dari profit, bukan modal</p>
+            </div>
+          )}
+          <button onClick={() => setShowSimulasi(s => !s)}
+            style={{ width: 52, height: 52, borderRadius: '50%', background: showSimulasi ? '#16A34A' : '#6366F1', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(99,102,241,.4)', fontSize: 22, transition: 'background .2s' }}>
+            {showSimulasi ? '×' : '🔮'}
+          </button>
         </div>
       )}
     </div>
