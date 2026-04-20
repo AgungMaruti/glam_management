@@ -172,7 +172,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="stats-grid">
-        <StatCard title="Saldo Bersih" value={formatRupiah(stats.totalSaldo)} icon={Wallet} color={stats.totalSaldo >= 0 ? 'indigo' : 'red'} />
+        <StatCard title="Saldo" value={formatRupiah(stats.totalSaldo)} icon={Wallet} color={stats.totalSaldo >= 0 ? 'indigo' : 'red'} />
         <StatCard title="Total Pemasukan" value={formatRupiah(stats.totalIncome)} icon={TrendingUp} color="green" />
         <StatCard title="Total Pengeluaran" value={formatRupiah(stats.totalExpense)} icon={ShoppingBag} color="amber" />
         <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
