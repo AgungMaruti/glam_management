@@ -31,7 +31,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = '
       </div>
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 13, color: '#64748B', fontWeight: 500, marginBottom: 4 }}>{title}</p>
-        <p style={{ fontSize: 24, fontWeight: 800, color: p.text, letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
+        <p style={{ fontSize: 20, fontWeight: 800, color: p.text, letterSpacing: '-0.03em', lineHeight: 1.1, wordBreak: 'break-all' }}>{value}</p>
         {subtitle && <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>{subtitle}</p>}
       </div>
     </div>
