@@ -76,6 +76,11 @@ export default function ProductsPage() {
     if (qty <= 0 || qty > selVariant.stock) return
     setSaving(true)
     await supabase.from('variants').update({ stock: selVariant.stock - qty }).eq('id', selVariant.id)
+    await supabase.from('sales').insert({
+      variant_id: selVariant.id, quantity: qty,
+      unit_price: harga, total_amount: harga * qty,
+      sold_at: new Date().toISOString(),
+    })
     if (jualForm.catat) {
       await supabase.from('cashflow').insert({
         type: 'income', category: 'Penjualan',
