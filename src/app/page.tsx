@@ -78,6 +78,8 @@ export default function DashboardPage() {
   const [savingModal, setSavingModal] = useState(false)
   const [modalMode, setModalMode] = useState<'set' | 'tambah'>('set')
   const [totalSoldBulanIni, setTotalSoldBulanIni] = useState(0)
+  const [totalPiutang, setTotalPiutang] = useState(0)
+  const [resellerSummaries, setResellerSummaries] = useState<{ name: string; sisa: number }[]>([])
 
   type Periode = 'hari_ini' | 'minggu_ini' | 'bulan_ini' | 'semua'
   const [periode, setPeriode] = useState<Periode>('bulan_ini')
@@ -111,13 +113,15 @@ export default function DashboardPage() {
       if (from) cfQuery = cfQuery.gte('transaction_date', from)
       if (to) cfQuery = cfQuery.lte('transaction_date', to + 'T23:59:59')
 
-      const [cf, allCf, sales, mats, settings, salesBulanIni] = await Promise.all([
+      const [cf, allCf, sales, mats, settings, salesBulanIni, distRes, paymentsRes] = await Promise.all([
         cfQuery,
         supabase.from('cashflow').select('type, amount, category'),
         supabase.from('sales').select('*, variant:variants(name)').limit(200),
         supabase.from('raw_materials').select('*'),
         supabase.from('settings').select('*'),
         supabase.from('sales').select('quantity').gte('sold_at', bulanFrom),
+        supabase.from('distributions').select('reseller_id, quantity, price_per_unit, reseller:resellers(name)'),
+        supabase.from('reseller_payments').select('reseller_id, amount'),
       ])
       const cashflows = cf.data || []
       const allCashflows = allCf.data || []
@@ -148,6 +152,24 @@ export default function DashboardPage() {
       setMarketing(cashflows.filter(c => c.category === 'Marketing').reduce((s, c) => s + c.amount, 0))
       setOperasional(cashflows.filter(c => c.category === 'Operasional').reduce((s, c) => s + c.amount, 0))
       setTotalSoldBulanIni((salesBulanIni.data || []).reduce((s: number, x: any) => s + x.quantity, 0))
+
+      // Hitung piutang reseller
+      const distributions = distRes.data || []
+      const payments = paymentsRes.data || []
+      const tagihanMap: Record<string, { name: string; tagihan: number }> = {}
+      distributions.forEach((d: any) => {
+        if (!d.reseller_id) return
+        const name = d.reseller?.name || 'Unknown'
+        if (!tagihanMap[d.reseller_id]) tagihanMap[d.reseller_id] = { name, tagihan: 0 }
+        tagihanMap[d.reseller_id].tagihan += d.quantity * d.price_per_unit
+      })
+      const dibayarMap: Record<string, number> = {}
+      payments.forEach((p: any) => { dibayarMap[p.reseller_id] = (dibayarMap[p.reseller_id] || 0) + p.amount })
+      const summaries = Object.entries(tagihanMap)
+        .map(([id, val]) => ({ name: val.name, sisa: val.tagihan - (dibayarMap[id] || 0) }))
+        .filter(s => s.sisa > 0)
+      setResellerSummaries(summaries)
+      setTotalPiutang(summaries.reduce((s, r) => s + r.sisa, 0))
 
       const byVariant: Record<string, number> = {}
       allSales.forEach((s: any) => { const n = s.variant?.name || 'Lainnya'; byVariant[n] = (byVariant[n] || 0) + s.total_amount })
@@ -243,7 +265,25 @@ export default function DashboardPage() {
         <StatCard title="Total Pemasukan" value={formatRupiah(stats.totalIncome)} icon={TrendingUp} color="green" />
         <StatCard title="Total Pengeluaran" value={formatRupiah(stats.totalExpense)} icon={ShoppingBag} color="amber" />
         <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
+        {totalPiutang > 0 && (
+          <StatCard title="Piutang Reseller" value={formatRupiah(totalPiutang)} icon={Wallet} color="amber" />
+        )}
       </div>
+
+      {/* Piutang per Reseller */}
+      {resellerSummaries.length > 0 && (
+        <div className="card" style={{ padding: '16px 20px' }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 12 }}>Piutang Per Reseller</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {resellerSummaries.map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#FEF3C7', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>{r.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#D97706' }}>{formatRupiah(r.sisa)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modal & Profit Tracker */}
       <div className="card" style={{ overflow: 'hidden' }}>
