@@ -337,6 +337,53 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* BEP Bisnis */}
+      {periode === 'bulan_ini' && bepBotol > 0 && (
+        <div className="card" style={{ padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: bepTercapai ? '#DCFCE7' : '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={15} color={bepTercapai ? '#16A34A' : '#D97706'} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>BEP Bulan Ini</h3>
+              <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>Titik balik modal operasional</p>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+            <div style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 8, padding: '10px 8px' }}>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>Minimal Jual</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: '#0F172A' }}>{bepBotol}</p>
+              <p style={{ fontSize: 10, color: '#94A3B8' }}>botol</p>
+            </div>
+            <div style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 8, padding: '10px 8px' }}>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>Sudah Terjual</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: bepTercapai ? '#16A34A' : '#D97706' }}>{totalSoldBulanIni}</p>
+              <p style={{ fontSize: 10, color: '#94A3B8' }}>botol</p>
+            </div>
+            <div style={{ textAlign: 'center', background: bepTercapai ? '#F0FDF4' : '#FEF3C7', borderRadius: 8, padding: '10px 8px' }}>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>{bepTercapai ? 'Lebih' : 'Kurang'}</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: bepTercapai ? '#16A34A' : '#D97706' }}>
+                {bepTercapai ? `+${totalSoldBulanIni - bepBotol}` : bepBotol - totalSoldBulanIni}
+              </p>
+              <p style={{ fontSize: 10, color: '#94A3B8' }}>botol</p>
+            </div>
+          </div>
+          <div style={{ height: 6, borderRadius: 99, background: '#E2E8F0', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 99,
+              background: bepTercapai ? '#16A34A' : '#D97706',
+              width: `${Math.min((totalSoldBulanIni / Math.max(bepBotol, 1)) * 100, 100)}%`,
+              transition: 'width .4s',
+            }} />
+          </div>
+          <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>
+            {bepTercapai
+              ? `✅ BEP tercapai! Kamu sudah untung dari ops bulan ini.`
+              : `⚠️ Butuh ${bepBotol - totalSoldBulanIni} botol lagi untuk nutup biaya ops bulan ini.`}
+          </p>
+        </div>
+      )}
+
       {/* Modal Bisnis Dialog */}
       <Modal open={showModalBisnisModal} onClose={() => setShowModalBisnisModal(false)} title={modalMode === 'set' ? (modalBisnis > 0 ? 'Edit Modal Bisnis' : 'Set Modal Awal') : 'Tambah Modal'} size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
