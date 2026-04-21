@@ -87,3 +87,38 @@ export interface Cashflow {
   transaction_date: string
   created_at: string
 }
+
+export interface Reseller {
+  id: string
+  name: string
+  created_at: string
+}
+
+export interface Distribution {
+  id: string
+  variant_id: string
+  reseller_id: string | null
+  quantity: number
+  price_per_unit: number
+  distributed_at: string
+  reseller?: Reseller
+  variant?: Variant
+}
+
+export interface ResellerPayment {
+  id: string
+  reseller_id: string
+  variant_id: string
+  quantity: number
+  amount: number
+  paid_at: string
+  reseller?: Reseller
+  variant?: Variant
+}
+
+export interface ResellerSummary {
+  reseller: Reseller
+  totalTagihan: number
+  totalDibayar: number
+  sisaPiutang: number
+}
