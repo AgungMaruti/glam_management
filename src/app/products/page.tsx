@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { FlaskConical, Plus, Trash2, Edit2, Package, AlertTriangle, Send, ShoppingBag, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
-import { Product, Variant } from '@/types'
+import { Product, Variant, Reseller } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -22,17 +22,21 @@ export default function ProductsPage() {
   const [selVariant, setSelVariant] = useState<Variant | null>(null)
   const [pForm, setPForm] = useState({ name: '', description: '' })
   const [vForm, setVForm] = useState({ name: '', size_ml: '', selling_price: '', stock: '' })
-  const [distForm, setDistForm] = useState({ qty: '', harga: '', keterangan: '' })
+  const [distForm, setDistForm] = useState({ qty: '', harga: '', keterangan: '', reseller_id: '', reseller_name: '' })
   const [jualForm, setJualForm] = useState({ qty: '', harga: '', catat: true, keterangan: '' })
   const [resellerForm, setResellerForm] = useState({ qty: '', harga: '', catat: true, keterangan: '' })
+  const [resellers, setResellers] = useState<Reseller[]>([])
+  const [distResellerInput, setDistResellerInput] = useState('')
+  const [showResellerDropdown, setShowResellerDropdown] = useState(false)
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [prodRes, salesRes, productsRes] = await Promise.all([
+    const [prodRes, salesRes, productsRes, resellersRes] = await Promise.all([
       supabase.from('productions').select('variant_id, quantity'),
       supabase.from('sales').select('variant_id, quantity'),
       supabase.from('products').select('*, variants(*)').order('created_at', { ascending: false }),
+      supabase.from('resellers').select('*').order('name'),
     ])
 
     const productions = prodRes.data || []
@@ -54,6 +58,7 @@ export default function ProductsPage() {
     }))
 
     setProducts(enriched)
+    setResellers(resellersRes.data || [])
     setLoading(false)
   }
 
@@ -85,11 +90,35 @@ export default function ProductsPage() {
     const qty = parseInt(distForm.qty)
     if (qty <= 0 || qty > selVariant.stock) return
     setSaving(true)
+
+    let resellerId: string | null = distForm.reseller_id || null
+    if (!resellerId && distForm.reseller_name.trim()) {
+      const { data: newReseller } = await supabase
+        .from('resellers')
+        .insert({ name: distForm.reseller_name.trim() })
+        .select()
+        .single()
+      resellerId = newReseller?.id || null
+    }
+
+    await supabase.from('distributions').insert({
+      variant_id: selVariant.id,
+      reseller_id: resellerId,
+      quantity: qty,
+      price_per_unit: parseFloat(distForm.harga),
+      distributed_at: new Date().toISOString(),
+    })
+
     await supabase.from('variants').update({
       stock: selVariant.stock - qty,
       stock_reseller: (selVariant.stock_reseller || 0) + qty,
     }).eq('id', selVariant.id)
-    setMode(null); setSaving(false); load()
+
+    setMode(null)
+    setDistForm({ qty: '', harga: '', keterangan: '', reseller_id: '', reseller_name: '' })
+    setDistResellerInput('')
+    setSaving(false)
+    load()
   }
 
   async function saveJualSendiri() {
@@ -121,7 +150,29 @@ export default function ProductsPage() {
     const harga = parseFloat(resellerForm.harga)
     if (qty <= 0 || qty > (selVariant.stock_reseller || 0)) return
     setSaving(true)
+
+    const { data: lastDist } = await supabase
+      .from('distributions')
+      .select('reseller_id')
+      .eq('variant_id', selVariant.id)
+      .order('distributed_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    const resellerId = lastDist?.reseller_id || null
+
+    if (resellerId) {
+      await supabase.from('reseller_payments').insert({
+        reseller_id: resellerId,
+        variant_id: selVariant.id,
+        quantity: qty,
+        amount: harga * qty,
+        paid_at: new Date().toISOString(),
+      })
+    }
+
     await supabase.from('variants').update({ stock_reseller: (selVariant.stock_reseller || 0) - qty }).eq('id', selVariant.id)
+
     if (resellerForm.catat) {
       const desc = resellerForm.keterangan ? `Reseller — ${selVariant.name} x${qty} — ${resellerForm.keterangan}` : `Reseller — ${selVariant.name} x${qty}`
       await supabase.from('cashflow').insert({
@@ -281,7 +332,7 @@ export default function ProductsPage() {
 
                         {/* Action buttons */}
                         <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-                          <button onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '', keterangan: '' }); setMode('distribusi') }}
+                          <button onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '', keterangan: '', reseller_id: '', reseller_name: '' }); setDistResellerInput(''); setMode('distribusi') }}
                             title="Distribusi ke Reseller"
                             style={{ flex: 1, height: 28, borderRadius: 7, background: '#EEF2FF', border: 'none', color: '#6366F1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
                             <Send size={11} /> Dist
@@ -390,6 +441,45 @@ export default function ProductsPage() {
               <NumInput className="field" placeholder="65000" value={distForm.harga}
                 onChange={v => setDistForm(f => ({ ...f, harga: v }))} />
             </div>
+          </div>
+          {/* Reseller combobox */}
+          <div style={{ position: 'relative' }}>
+            <label style={lbl}>Reseller *</label>
+            <input
+              className="field"
+              placeholder="Ketik nama reseller..."
+              value={distResellerInput}
+              autoComplete="off"
+              onChange={e => {
+                setDistResellerInput(e.target.value)
+                setDistForm(f => ({ ...f, reseller_id: '', reseller_name: e.target.value }))
+                setShowResellerDropdown(true)
+              }}
+              onFocus={() => setShowResellerDropdown(true)}
+              onBlur={() => setTimeout(() => setShowResellerDropdown(false), 150)}
+            />
+            {showResellerDropdown && (distResellerInput || resellers.length > 0) && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,.08)', zIndex: 50, maxHeight: 160, overflowY: 'auto' }}>
+                {resellers
+                  .filter(r => !distResellerInput || r.name.toLowerCase().includes(distResellerInput.toLowerCase()))
+                  .map(r => (
+                    <button key={r.id}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', background: 'none', border: 'none', fontSize: 13, color: '#334155', cursor: 'pointer' }}
+                      onMouseDown={() => {
+                        setDistResellerInput(r.name)
+                        setDistForm(f => ({ ...f, reseller_id: r.id, reseller_name: r.name }))
+                        setShowResellerDropdown(false)
+                      }}>
+                      {r.name}
+                    </button>
+                  ))}
+                {distResellerInput && !resellers.find(r => r.name.toLowerCase() === distResellerInput.toLowerCase()) && (
+                  <div style={{ padding: '9px 14px', fontSize: 12, color: '#6366F1', fontWeight: 600 }}>
+                    + Tambah &quot;{distResellerInput}&quot; sebagai reseller baru
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {distForm.qty && distForm.harga && (
             <p style={{ fontSize: 12, color: '#64748B' }}>
