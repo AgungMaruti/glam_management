@@ -23,7 +23,7 @@ export default function InventoryPage() {
   const [showMatModal, setShowMatModal] = useState(false)
   const [showRecipeModal, setShowRecipeModal] = useState(false)
   const [showProdModal, setShowProdModal] = useState(false)
-  const [matForm, setMatForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '', total_cost: '', cost_per_unit: '' })
+  const [matForm, setMatForm] = useState({ name: '', unit: 'ml', stock: '', qty_beli: '', min_stock: '', total_cost: '', cost_per_unit: '' })
   const [recipeForm, setRecipeForm] = useState({ variant_id: '', raw_material_id: '', quantity_needed: '' })
   const [prodForm, setProdForm] = useState({ variant_id: '', quantity: '', notes: '' })
   const [preview, setPreview] = useState<{ name: string; needed: number; available: number; ok: boolean }[]>([])
@@ -56,7 +56,7 @@ export default function InventoryPage() {
     if (!matForm.name) return
     setSaving(true)
     await supabase.from('raw_materials').insert({ name: matForm.name, unit: matForm.unit, stock: parseFloat(matForm.stock) || 0, min_stock: parseFloat(matForm.min_stock) || 0, cost_per_unit: parseFloat(matForm.cost_per_unit) || 0 })
-    setMatForm({ name: '', unit: 'ml', stock: '', min_stock: '', total_cost: '', cost_per_unit: '' })
+    setMatForm({ name: '', unit: 'ml', stock: '', qty_beli: '', min_stock: '', total_cost: '', cost_per_unit: '' })
     setShowMatModal(false); setSaving(false); load()
   }
 
@@ -325,10 +325,8 @@ export default function InventoryPage() {
               <Select value={matForm.unit} onChange={v => setMatForm(f => ({ ...f, unit: v }))}
                 options={['ml', 'gram', 'pcs', 'liter', 'kg'].map(u => ({ value: u, label: u }))} />
             </div>
-            <div><label style={lbl}>Stok Awal ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.stock} onChange={e => {
-              const stock = e.target.value
-              const cpu = matForm.total_cost && stock ? (parseFloat(matForm.total_cost) / parseFloat(stock)).toFixed(2) : matForm.cost_per_unit
-              setMatForm(f => ({ ...f, stock, cost_per_unit: cpu }))
+            <div><label style={lbl}>Stok Saat Ini ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.stock} onChange={e => {
+              setMatForm(f => ({ ...f, stock: e.target.value }))
             }} /></div>
           </div>
 
@@ -340,17 +338,17 @@ export default function InventoryPage() {
                 <label style={lbl}>Harga Beli Total (Rp)</label>
                 <NumInput placeholder="17.000" value={matForm.total_cost}
                   onChange={total => {
-                    const cpu = total && matForm.stock ? (parseFloat(total) / parseFloat(matForm.stock)).toFixed(2) : ''
+                    const cpu = total && matForm.qty_beli ? (parseFloat(total) / parseFloat(matForm.qty_beli)).toFixed(2) : ''
                     setMatForm(f => ({ ...f, total_cost: total, cost_per_unit: cpu }))
                   }} />
               </div>
               <div>
                 <label style={lbl}>Dapat ({matForm.unit})</label>
-                <input className="field" type="number" placeholder="100" value={matForm.stock}
+                <input className="field" type="number" placeholder="100" value={matForm.qty_beli}
                   onChange={e => {
-                    const stock = e.target.value
-                    const cpu = matForm.total_cost && stock ? (parseFloat(matForm.total_cost) / parseFloat(stock)).toFixed(2) : ''
-                    setMatForm(f => ({ ...f, stock, cost_per_unit: cpu }))
+                    const qty_beli = e.target.value
+                    const cpu = matForm.total_cost && qty_beli ? (parseFloat(matForm.total_cost) / parseFloat(qty_beli)).toFixed(2) : ''
+                    setMatForm(f => ({ ...f, qty_beli, cost_per_unit: cpu }))
                   }} />
               </div>
             </div>
@@ -364,11 +362,11 @@ export default function InventoryPage() {
               <input className="field" type="number" placeholder="170"
                 value={matForm.cost_per_unit}
                 onChange={e => setMatForm(f => ({ ...f, cost_per_unit: e.target.value, total_cost: '' }))}
-                style={matForm.total_cost && matForm.stock ? { background: '#EEF2FF', borderColor: '#6366F1', fontWeight: 700 } : {}}
+                style={matForm.total_cost && matForm.qty_beli ? { background: '#EEF2FF', borderColor: '#6366F1', fontWeight: 700 } : {}}
               />
-              {matForm.total_cost && matForm.stock && (
+              {matForm.total_cost && matForm.qty_beli && (
                 <p style={{ fontSize: 11, color: '#6366F1', marginTop: 4 }}>
-                  ✓ Auto: Rp {matForm.total_cost} ÷ {matForm.stock} {matForm.unit} = <strong>Rp {matForm.cost_per_unit}/{matForm.unit}</strong>
+                  ✓ Auto: Rp {matForm.total_cost} ÷ {matForm.qty_beli} {matForm.unit} = <strong>Rp {matForm.cost_per_unit}/{matForm.unit}</strong>
                 </p>
               )}
             </div>
