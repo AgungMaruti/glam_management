@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus } from 'lucide-react'
+import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus, Pencil } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
 import { RawMaterial, Variant, Recipe } from '@/types'
@@ -29,6 +29,8 @@ export default function InventoryPage() {
   const [preview, setPreview] = useState<{ name: string; needed: number; available: number; ok: boolean }[]>([])
   const [restockMat, setRestockMat] = useState<RawMaterial | null>(null)
   const [restockForm, setRestockForm] = useState({ qty: '', total_cost: '', catat_cashflow: true })
+  const [editMat, setEditMat] = useState<RawMaterial | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '', cost_per_unit: '' })
 
   useEffect(() => { load() }, [])
 
@@ -88,6 +90,21 @@ export default function InventoryPage() {
   async function deleteMaterial(id: string) {
     if (!confirm('Hapus bahan baku ini?')) return
     await supabase.from('raw_materials').delete().eq('id', id); load()
+  }
+
+  async function saveEdit() {
+    if (!editMat || !editForm.name) return
+    setSaving(true)
+    await supabase.from('raw_materials').update({
+      name: editForm.name,
+      unit: editForm.unit,
+      stock: parseFloat(editForm.stock) || 0,
+      min_stock: parseFloat(editForm.min_stock) || 0,
+      cost_per_unit: parseFloat(editForm.cost_per_unit) || 0,
+    }).eq('id', editMat.id)
+    setEditMat(null)
+    setSaving(false)
+    load()
   }
 
   async function saveRestock() {
@@ -178,6 +195,12 @@ export default function InventoryPage() {
                         </div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, marginLeft: 4 }}>
                           {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', fontSize: 9 }}>!</span>}
+                          <button onClick={() => { setEditMat(m); setEditForm({ name: m.name, unit: m.unit, stock: String(m.stock), min_stock: String(m.min_stock), cost_per_unit: String(m.cost_per_unit) }) }}
+                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4'; (e.currentTarget as HTMLButtonElement).style.color = '#16A34A' }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                            <Pencil size={11} />
+                          </button>
                           <button onClick={() => { setRestockMat(m); setRestockForm({ qty: '', total_cost: '', catat_cashflow: true }) }}
                             style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1' }}
@@ -311,6 +334,34 @@ export default function InventoryPage() {
               <Button variant="ghost" onClick={() => setRestockMat(null)} style={{ flex: 1 }}>Batal</Button>
               <Button icon={PackagePlus} onClick={saveRestock} loading={saving} style={{ flex: 1 }}
                 disabled={!restockForm.qty}>Simpan Restock</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Material Modal */}
+      <Modal open={!!editMat} onClose={() => setEditMat(null)} title="Edit Bahan Baku" size="sm">
+        {editMat && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div><label style={lbl}>Nama Bahan *</label><input className="field" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div><label style={lbl}>Satuan</label>
+                <Select value={editForm.unit} onChange={v => setEditForm(f => ({ ...f, unit: v }))}
+                  options={['ml', 'gram', 'pcs', 'liter', 'kg'].map(u => ({ value: u, label: u }))} />
+              </div>
+              <div><label style={lbl}>Stok Saat Ini ({editForm.unit})</label>
+                <input className="field" type="number" value={editForm.stock} onChange={e => setEditForm(f => ({ ...f, stock: e.target.value }))} />
+              </div>
+            </div>
+            <div><label style={lbl}>Harga per {editForm.unit} (Rp)</label>
+              <input className="field" type="number" value={editForm.cost_per_unit} onChange={e => setEditForm(f => ({ ...f, cost_per_unit: e.target.value }))} />
+            </div>
+            <div><label style={lbl}>Stok Min ({editForm.unit})</label>
+              <input className="field" type="number" value={editForm.min_stock} onChange={e => setEditForm(f => ({ ...f, min_stock: e.target.value }))} />
+            </div>
+            <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <Button variant="ghost" onClick={() => setEditMat(null)} style={{ flex: 1 }}>Batal</Button>
+              <Button icon={Pencil} onClick={saveEdit} loading={saving} style={{ flex: 1 }}>Simpan</Button>
             </div>
           </div>
         )}
