@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const [marketing, setMarketing] = useState(0)
   const [operasional, setOperasional] = useState(0)
   const [modalBisnis, setModalBisnis] = useState(0)
+  const [kasAllTime, setKasAllTime] = useState(0)
   const [showModalBisnisModal, setShowModalBisnisModal] = useState(false)
   const [showSimulasi, setShowSimulasi] = useState(false)
   const [modalInput, setModalInput] = useState('')
@@ -76,18 +77,50 @@ export default function DashboardPage() {
   const [catatCashflow, setCatatCashflow] = useState(true)
   const [savingModal, setSavingModal] = useState(false)
   const [modalMode, setModalMode] = useState<'set' | 'tambah'>('set')
+  const [totalSoldBulanIni, setTotalSoldBulanIni] = useState(0)
 
-  useEffect(() => { load() }, [])
+  type Periode = 'hari_ini' | 'minggu_ini' | 'bulan_ini' | 'semua'
+  const [periode, setPeriode] = useState<Periode>('bulan_ini')
+
+  function getDateRange(p: Periode): { from: string | null; to: string | null } {
+    const now = new Date()
+    if (p === 'semua') return { from: null, to: null }
+    if (p === 'hari_ini') {
+      const d = now.toISOString().split('T')[0]
+      return { from: d, to: d }
+    }
+    if (p === 'minggu_ini') {
+      const day = now.getDay() || 7
+      const mon = new Date(now)
+      mon.setDate(now.getDate() - day + 1)
+      return { from: mon.toISOString().split('T')[0], to: now.toISOString().split('T')[0] }
+    }
+    const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    return { from, to: now.toISOString().split('T')[0] }
+  }
+
+  useEffect(() => { load() }, [periode])
 
   async function load() {
     try {
-      const [cf, sales, mats, settings] = await Promise.all([
-        supabase.from('cashflow').select('*'),
+      const { from, to } = getDateRange(periode)
+      const now = new Date()
+      const bulanFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+      let cfQuery = supabase.from('cashflow').select('*')
+      if (from) cfQuery = cfQuery.gte('transaction_date', from)
+      if (to) cfQuery = cfQuery.lte('transaction_date', to + 'T23:59:59')
+
+      const [cf, allCf, sales, mats, settings, salesBulanIni] = await Promise.all([
+        cfQuery,
+        supabase.from('cashflow').select('type, amount, category'),
         supabase.from('sales').select('*, variant:variants(name)').limit(200),
         supabase.from('raw_materials').select('*'),
         supabase.from('settings').select('*'),
+        supabase.from('sales').select('quantity').gte('sold_at', bulanFrom),
       ])
       const cashflows = cf.data || []
+      const allCashflows = allCf.data || []
       const allSales = sales.data || []
       const materials = mats.data || []
       const sett = settings.data || []
@@ -99,14 +132,22 @@ export default function DashboardPage() {
       if (hp) setHpp(parseFloat(hp.value))
       if (mb) setModalBisnis(parseFloat(mb.value))
 
+      // Stats cards menggunakan cashflow terfilter
       const income = cashflows.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
       const expense = cashflows.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
       setStats({ totalSaldo: income - expense, totalIncome: income, totalExpense: expense, criticalStock: materials.filter(m => m.stock <= m.min_stock).length })
       setCriticalMaterials(materials.filter(m => m.stock <= m.min_stock))
+
+      // Kas ALL TIME untuk Modal Tracker / ROI
+      const allIncome = allCashflows.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
+      const allExpense = allCashflows.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
+      setKasAllTime(allIncome - allExpense)
+
       setTotalSold(allSales.reduce((s: number, x: any) => s + x.quantity, 0))
       setGaji(cashflows.filter(c => c.category === 'Gaji Karyawan').reduce((s, c) => s + c.amount, 0))
       setMarketing(cashflows.filter(c => c.category === 'Marketing').reduce((s, c) => s + c.amount, 0))
       setOperasional(cashflows.filter(c => c.category === 'Operasional').reduce((s, c) => s + c.amount, 0))
+      setTotalSoldBulanIni((salesBulanIni.data || []).reduce((s: number, x: any) => s + x.quantity, 0))
 
       const byVariant: Record<string, number> = {}
       allSales.forEach((s: any) => { const n = s.variant?.name || 'Lainnya'; byVariant[n] = (byVariant[n] || 0) + s.total_amount })
@@ -155,7 +196,7 @@ export default function DashboardPage() {
     load()
   }
 
-  const kasSekarang = stats.totalIncome - stats.totalExpense
+  const kasSekarang = kasAllTime
   const profitBersih = modalBisnis > 0 ? kasSekarang - modalBisnis : null
   const roi = modalBisnis > 0 && profitBersih !== null ? (profitBersih / modalBisnis) * 100 : null
 
@@ -165,11 +206,36 @@ export default function DashboardPage() {
   const netProfit = grossProfit - gaji - marketing - operasional
   const margin = sellingPrice > 0 ? (((sellingPrice - hpp) / sellingPrice) * 100).toFixed(1) : '0'
 
+  const marginPerBottle = sellingPrice - hpp
+  const biayaTetapBulanIni = gaji + marketing + operasional
+  const bepBotol = periode === 'bulan_ini' && marginPerBottle > 0 ? Math.ceil(biayaTetapBulanIni / marginPerBottle) : 0
+  const bepTercapai = totalSoldBulanIni >= bepBotol
+
   if (loading) return <Spinner />
 
   return (
     <div className="page-sections">
       <PageHeader title="Dashboard" subtitle="Ringkasan bisnis parfum kamu" icon={LayoutDashboard} />
+
+      {/* Filter Periode */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {([
+          { key: 'hari_ini', label: 'Hari Ini' },
+          { key: 'minggu_ini', label: 'Minggu Ini' },
+          { key: 'bulan_ini', label: 'Bulan Ini' },
+          { key: 'semua', label: 'Semua' },
+        ] as { key: typeof periode; label: string }[]).map(opt => (
+          <button key={opt.key} onClick={() => setPeriode(opt.key)}
+            style={{
+              padding: '6px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: periode === opt.key ? '#6366F1' : '#F1F5F9',
+              color: periode === opt.key ? '#fff' : '#64748B',
+              transition: 'all .15s',
+            }}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
       {/* Stats */}
       <div className="stats-grid">
