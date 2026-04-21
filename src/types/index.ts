@@ -28,6 +28,8 @@ export interface Variant {
   created_at: string
   product?: Product
   recipes?: Recipe[]
+  total_produced?: number
+  total_sold?: number
 }
 
 export interface Recipe {

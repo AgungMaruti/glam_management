@@ -29,8 +29,31 @@ export default function ProductsPage() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await supabase.from('products').select('*, variants(*)').order('created_at', { ascending: false })
-    setProducts(data || [])
+    const [prodRes, salesRes, productsRes] = await Promise.all([
+      supabase.from('productions').select('variant_id, quantity'),
+      supabase.from('sales').select('variant_id, quantity'),
+      supabase.from('products').select('*, variants(*)').order('created_at', { ascending: false }),
+    ])
+
+    const productions = prodRes.data || []
+    const sales = salesRes.data || []
+    const rawProducts = productsRes.data || []
+
+    const producedMap: Record<string, number> = {}
+    productions.forEach(p => { producedMap[p.variant_id] = (producedMap[p.variant_id] || 0) + p.quantity })
+    const soldMap: Record<string, number> = {}
+    sales.forEach(s => { soldMap[s.variant_id] = (soldMap[s.variant_id] || 0) + s.quantity })
+
+    const enriched = rawProducts.map(product => ({
+      ...product,
+      variants: product.variants.map((v: Variant) => ({
+        ...v,
+        total_produced: producedMap[v.id] || 0,
+        total_sold: soldMap[v.id] || 0,
+      })),
+    }))
+
+    setProducts(enriched)
     setLoading(false)
   }
 
@@ -201,6 +224,42 @@ export default function ProductsPage() {
                         {v.size_ml > 0 && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>{v.size_ml} ml</p>}
 
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#4338CA', marginTop: 8 }}>{formatRupiah(v.selling_price)}</div>
+
+                        {/* Breakdown produksi */}
+                        {(v.total_produced || 0) > 0 && (
+                          <div style={{ marginTop: 8, marginBottom: 4, padding: '8px 10px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                              Produksi: {v.total_produced} pcs
+                            </p>
+                            <div style={{ marginBottom: 5 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                                <span style={{ fontSize: 10, color: '#16A34A', fontWeight: 600 }}>Terjual</span>
+                                <span style={{ fontSize: 10, color: '#16A34A', fontWeight: 700 }}>{v.total_sold} pcs</span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 99, background: '#E2E8F0', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: 99, background: '#16A34A', width: `${Math.min(((v.total_sold || 0) / (v.total_produced || 1)) * 100, 100)}%` }} />
+                              </div>
+                            </div>
+                            <div style={{ marginBottom: 5 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                                <span style={{ fontSize: 10, color: '#6366F1', fontWeight: 600 }}>Reseller</span>
+                                <span style={{ fontSize: 10, color: '#6366F1', fontWeight: 700 }}>{v.stock_reseller} pcs</span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 99, background: '#E2E8F0', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: 99, background: '#6366F1', width: `${Math.min(((v.stock_reseller || 0) / (v.total_produced || 1)) * 100, 100)}%` }} />
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                                <span style={{ fontSize: 10, color: '#D97706', fontWeight: 600 }}>Sendiri</span>
+                                <span style={{ fontSize: 10, color: '#D97706', fontWeight: 700 }}>{v.stock} pcs</span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 99, background: '#E2E8F0', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: 99, background: '#D97706', width: `${Math.min(((v.stock || 0) / (v.total_produced || 1)) * 100, 100)}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Stock rows */}
                         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
