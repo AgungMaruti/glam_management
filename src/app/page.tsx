@@ -178,6 +178,7 @@ export default function DashboardPage() {
       const byMonth: Record<string, any> = {}
       cashflows.forEach(c => {
         const d = new Date(c.transaction_date)
+        if (isNaN(d.getTime()) || d.getFullYear() < 2000) return
         const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
         const label = d.toLocaleString('id-ID', { month: 'short', year: '2-digit' })
         if (!byMonth[k]) byMonth[k] = { month: label, income: 0, expense: 0 }
