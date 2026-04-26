@@ -81,8 +81,6 @@ export default function InventoryPage() {
     }
     await supabase.from('variants').update({ stock: (variant.stock || 0) + qty }).eq('id', prodForm.variant_id)
     await supabase.from('productions').insert({ variant_id: prodForm.variant_id, quantity: qty, notes: prodForm.notes })
-    const cost = variant.recipes.reduce((sum, r) => sum + (r.raw_material?.cost_per_unit || 0) * r.quantity_needed * qty, 0)
-    if (cost > 0) await supabase.from('cashflow').insert({ type: 'expense', category: 'Produksi', amount: cost, description: `Produksi ${qty} pcs ${variant.name}`, transaction_date: new Date().toISOString() })
     setProdForm({ variant_id: '', quantity: '', notes: '' })
     setShowProdModal(false); setSaving(false); load()
   }
