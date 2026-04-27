@@ -17,6 +17,15 @@ const EXPENSE_CATS = ['Produksi', 'Gaji Karyawan', 'Marketing', 'Packaging', 'On
 const ALL_CATS = [...INCOME_CATS, ...EXPENSE_CATS.filter(c => !INCOME_CATS.includes(c))]
 const defaultForm = { type: 'income' as 'income' | 'expense', category: '', amount: '', description: '', transaction_date: new Date().toISOString().slice(0, 10) }
 
+function fmtInput(val: string): string {
+  const digits = val.replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+function parseInput(val: string): number {
+  return parseFloat(val.replace(/\./g, '')) || 0
+}
+
 function printLaporan(data: {
   rows: Cashflow[],
   saldoAwal: number,
@@ -230,7 +239,7 @@ export default function CashflowPage() {
   async function saveSaldoAwal() {
     if (!saldoInput) return
     setSaving(true)
-    const amount = parseFloat(saldoInput)
+    const amount = parseInput(saldoInput)
     if (saldoAwal) {
       await supabase.from('cashflow').update({ amount, description: 'Saldo rekening awal' }).eq('id', saldoAwal.id)
     } else {
@@ -242,7 +251,7 @@ export default function CashflowPage() {
   async function saveCashflow() {
     if (!form.category || !form.amount) return
     setSaving(true)
-    await supabase.from('cashflow').insert({ type: form.type, category: form.category, amount: parseFloat(form.amount), description: form.description, transaction_date: form.transaction_date })
+    await supabase.from('cashflow').insert({ type: form.type, category: form.category, amount: parseInput(form.amount), description: form.description, transaction_date: form.transaction_date })
     setForm(defaultForm); setShowModal(false); setSaving(false); load()
   }
 
@@ -250,7 +259,7 @@ export default function CashflowPage() {
     if (!saleForm.variant_id || !saleForm.quantity || !saleForm.unit_price) return
     setSaving(true)
     const qty = parseInt(saleForm.quantity)
-    const price = parseFloat(saleForm.unit_price)
+    const price = parseInput(saleForm.unit_price)
     const total = qty * price
     const v = variants.find(v => v.id === saleForm.variant_id)
     if (!v) { setSaving(false); return }
@@ -308,7 +317,7 @@ export default function CashflowPage() {
             </p>
           </div>
         </div>
-        <button onClick={() => { setSaldoInput(saldoAwal?.amount.toString() || ''); setShowSaldoModal(true) }}
+        <button onClick={() => { setSaldoInput(fmtInput(saldoAwal?.amount.toString() || '')); setShowSaldoModal(true) }}
           style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer' }}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#E0E7FF'}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'}>
@@ -470,7 +479,7 @@ export default function CashflowPage() {
           </div>
           <div>
             <label style={lbl}>Jumlah Saldo Awal (Rp) *</label>
-            <input className="field" type="number" placeholder="Contoh: 500000" value={saldoInput} onChange={e => setSaldoInput(e.target.value)} autoFocus />
+            <input className="field" type="text" inputMode="numeric" placeholder="Contoh: 500.000" value={saldoInput} onChange={e => setSaldoInput(fmtInput(e.target.value))} autoFocus />
           </div>
           {saldoInput && (
             <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1.5px solid #BBF7D0', textAlign: 'center' }}>
@@ -504,7 +513,7 @@ export default function CashflowPage() {
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label style={lbl}>Jumlah (Rp) *</label><input className="field" type="number" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+            <div><label style={lbl}>Jumlah (Rp) *</label><input className="field" type="text" inputMode="numeric" placeholder="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: fmtInput(e.target.value) }))} /></div>
             <div><label style={lbl}>Tanggal</label><input className="field" type="date" value={form.transaction_date} onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))} /></div>
           </div>
           <div><label style={lbl}>Keterangan</label><input className="field" placeholder="Opsional..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
@@ -520,19 +529,19 @@ export default function CashflowPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={lbl}>Varian yang Dijual *</label>
             <select className="field" value={saleForm.variant_id}
-              onChange={e => { const v = variants.find(v => v.id === e.target.value); setSaleForm(f => ({ ...f, variant_id: e.target.value, unit_price: v?.selling_price.toString() || '' })) }}>
+              onChange={e => { const v = variants.find(v => v.id === e.target.value); setSaleForm(f => ({ ...f, variant_id: e.target.value, unit_price: fmtInput(v?.selling_price.toString() || '') })) }}>
               <option value="">-- Pilih Varian --</option>
               {variants.map(v => <option key={v.id} value={v.id}>{v.name} — stok: {v.stock} pcs</option>)}
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={lbl}>Jumlah (pcs) *</label><input className="field" type="number" placeholder="1" value={saleForm.quantity} onChange={e => setSaleForm(f => ({ ...f, quantity: e.target.value }))} /></div>
-            <div><label style={lbl}>Harga/pcs (Rp) *</label><input className="field" type="number" placeholder="0" value={saleForm.unit_price} onChange={e => setSaleForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
+            <div><label style={lbl}>Harga/pcs (Rp) *</label><input className="field" type="text" inputMode="numeric" placeholder="0" value={saleForm.unit_price} onChange={e => setSaleForm(f => ({ ...f, unit_price: fmtInput(e.target.value) }))} /></div>
           </div>
           {saleForm.quantity && saleForm.unit_price && (
             <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 16px', textAlign: 'center', border: '1.5px solid #BBF7D0' }}>
               <p style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Total Penjualan</p>
-              <p style={{ fontSize: 22, fontWeight: 800, color: '#16A34A' }}>{formatRupiah(parseInt(saleForm.quantity || '0') * parseFloat(saleForm.unit_price || '0'))}</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: '#16A34A' }}>{formatRupiah(parseInt(saleForm.quantity || '0') * parseInput(saleForm.unit_price))}</p>
             </div>
           )}
           <div><label style={lbl}>Catatan</label><input className="field" placeholder="Opsional..." value={saleForm.notes} onChange={e => setSaleForm(f => ({ ...f, notes: e.target.value }))} /></div>
