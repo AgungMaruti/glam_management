@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus, Pencil } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
-import { RawMaterial, Variant, Recipe } from '@/types'
+import { RawMaterial, Variant, Recipe, Production } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -31,6 +31,7 @@ export default function InventoryPage() {
   const [restockForm, setRestockForm] = useState({ qty: '', total_cost: '', catat_cashflow: true })
   const [editMat, setEditMat] = useState<RawMaterial | null>(null)
   const [editForm, setEditForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '', cost_per_unit: '' })
+  const [productions, setProductions] = useState<(Production & { variant: Variant })[]>([])
 
   useEffect(() => { load() }, [])
 
@@ -45,12 +46,14 @@ export default function InventoryPage() {
   }, [prodForm.variant_id, prodForm.quantity, variants])
 
   async function load() {
-    const [mRes, vRes] = await Promise.all([
+    const [mRes, vRes, pRes] = await Promise.all([
       supabase.from('raw_materials').select('*').order('name'),
       supabase.from('variants').select('*, recipes(*, raw_material:raw_materials(*))').order('name'),
+      supabase.from('productions').select('*, variant:variants(*)').order('produced_at', { ascending: false }).limit(50),
     ])
     setMaterials(mRes.data || [])
     setVariants(vRes.data || [])
+    setProductions(pRes.data || [])
     setLoading(false)
   }
 
@@ -234,37 +237,69 @@ export default function InventoryPage() {
                 <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
                   <p style={{ color: '#94A3B8', fontSize: 14 }}>Tambah produk & varian terlebih dahulu</p>
                 </div>
-              ) : variants.map(v => (
+              ) : variants.map(v => {
+                const hppDariResep = v.recipes.reduce((sum, r) => sum + (r.quantity_needed * (r.raw_material?.cost_per_unit || 0)), 0)
+                return (
                 <div key={v.id} className="card" style={{ padding: '14px 18px' }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>{v.name}</p>
                   {v.recipes.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {v.recipes.map(r => (
-                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F8FAFC' }}>
-                          <span style={{ fontSize: 13, color: '#334155' }}>{r.raw_material?.name}</span>
-                          <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{r.quantity_needed} {r.raw_material?.unit}/botol</span>
-                        </div>
-                      ))}
-                    </div>
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {v.recipes.map(r => (
+                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F8FAFC' }}>
+                            <span style={{ fontSize: 13, color: '#334155' }}>{r.raw_material?.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 11, color: '#94A3B8' }}>{r.quantity_needed} {r.raw_material?.unit} × {formatRupiah(r.raw_material?.cost_per_unit || 0)}</span>
+                              <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{formatRupiah(r.quantity_needed * (r.raw_material?.cost_per_unit || 0))}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>HPP dari resep</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: '#C2410C' }}>{formatRupiah(hppDariResep)}/botol</span>
+                      </div>
+                    </>
                   ) : (
                     <p style={{ fontSize: 13, color: '#94A3B8' }}>Belum ada resep</p>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}
 
         {tab === 'production' && (
-          <div>
-            <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Zap size={24} color="#6366F1" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {productions.length === 0 ? (
+              <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
+                <div style={{ width: 56, height: 56, borderRadius: 12, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Zap size={24} color="#6366F1" />
+                </div>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Produksi Batch</p>
+                <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 20 }}>Stok bahan baku berkurang otomatis sesuai resep</p>
+                <Button icon={Zap} onClick={() => setShowProdModal(true)}>Mulai Produksi</Button>
               </div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Produksi Batch</p>
-              <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 20 }}>Stok bahan baku berkurang otomatis sesuai resep</p>
-              <Button icon={Zap} onClick={() => setShowProdModal(true)}>Mulai Produksi</Button>
-            </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Riwayat Produksi</p>
+                {productions.map(p => {
+                  const date = new Date(p.produced_at)
+                  const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                  const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                  return (
+                    <div key={p.id} className="card" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.variant?.name || '—'}</p>
+                        {p.notes && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.notes}</p>}
+                        <p style={{ fontSize: 11, color: '#CBD5E1', marginTop: 2 }}>{dateStr} · {timeStr}</p>
+                      </div>
+                      <span className="badge" style={{ background: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: 13, flexShrink: 0, marginLeft: 12 }}>+{p.quantity} pcs</span>
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </div>
         )}
       </div>
