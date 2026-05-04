@@ -229,6 +229,8 @@ export default function DashboardPage() {
   const netProfit = grossProfit - gaji - marketing - operasional
   const margin = sellingPrice > 0 ? (((sellingPrice - hpp) / sellingPrice) * 100).toFixed(1) : '0'
 
+  const hppPct = sellingPrice > 0 ? (hpp / sellingPrice) * 100 : 0
+
   const marginPerBottle = sellingPrice - hpp
   const biayaTetapBulanIni = gaji + marketing + operasional
   const bepBotol = periode === 'bulan_ini' && marginPerBottle > 0 ? Math.ceil(biayaTetapBulanIni / marginPerBottle) : 0
@@ -540,6 +542,88 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Aliran Dana Penjualan */}
+      {totalSold > 0 && sellingPrice > 0 && (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Aliran Dana Penjualan</h2>
+              <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>Dari setiap penjualan, berapa yang balik modal dan berapa untung</p>
+            </div>
+            <span className="badge" style={{ background: '#F1F5F9', color: '#64748B', fontSize: 12, padding: '4px 10px' }}>{totalSold} pcs terjual</span>
+          </div>
+          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* 3 summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 6 }}>Total Omzet</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>{formatRupiah(grossRev)}</p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>{totalSold}× {formatRupiah(sellingPrice)}</p>
+              </div>
+              <div style={{ background: '#FEF3C7', borderRadius: 10, padding: '12px 14px', border: '1px solid #FDE68A' }}>
+                <p style={{ fontSize: 11, color: '#92400E', marginBottom: 6 }}>Balik Modal (HPP)</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: '#D97706', letterSpacing: '-0.02em' }}>{formatRupiah(totalHpp)}</p>
+                <p style={{ fontSize: 11, color: '#92400E', marginTop: 3 }}>{hppPct.toFixed(1)}% dari omzet</p>
+              </div>
+              <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '12px 14px', border: '1px solid #BBF7D0' }}>
+                <p style={{ fontSize: 11, color: '#166534', marginBottom: 6 }}>Untung Bersih</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: '#16A34A', letterSpacing: '-0.02em' }}>{formatRupiah(grossProfit)}</p>
+                <p style={{ fontSize: 11, color: '#166534', marginTop: 3 }}>Margin {margin}%</p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginBottom: 8 }}>Komposisi per unit terjual</p>
+              <div style={{ height: 12, borderRadius: 99, overflow: 'hidden', display: 'flex', background: '#F1F5F9' }}>
+                <div style={{ width: `${hppPct}%`, background: '#94A3B8', transition: 'width .4s', borderRadius: '99px 0 0 99px' }} />
+                <div style={{ flex: 1, background: '#16A34A', transition: 'width .4s', borderRadius: '0 99px 99px 0' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: '#94A3B8', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#64748B' }}>HPP (modal muter)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: '#16A34A', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: '#64748B' }}>Profit (bisa dianalisa)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Per unit breakdown */}
+            <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '2px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #F1F5F9' }}>
+                <span style={{ fontSize: 13, color: '#64748B' }}>Harga jual / unit</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{formatRupiah(sellingPrice)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #F1F5F9' }}>
+                <span style={{ fontSize: 13, color: '#64748B' }}>HPP / unit</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#D97706' }}>- {formatRupiah(hpp)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Profit / unit</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#16A34A' }}>= {formatRupiah(sellingPrice - hpp)}</span>
+              </div>
+            </div>
+
+            {/* Insight */}
+            <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '12px 14px', border: '1px solid #C7D2FE' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#4338CA', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Insight</p>
+              <p style={{ fontSize: 13, color: '#3730A3', lineHeight: 1.6 }}>
+                {parseFloat(margin) >= 50
+                  ? `Margin sehat. Dari setiap ${formatRupiah(sellingPrice)} yang masuk, lebih dari separuhnya adalah profit bersih.`
+                  : parseFloat(margin) >= 30
+                  ? `Margin cukup. Dari setiap ${formatRupiah(sellingPrice)}, sebesar ${formatRupiah(sellingPrice - hpp)} adalah profit dan ${formatRupiah(hpp)} kembali ke stok.`
+                  : `Margin tipis. Pertimbangkan untuk review HPP atau naikkan harga jual agar profit lebih optimal.`}
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Charts */}
       <div className="two-col-xl" style={{ flex: 1 }}>
