@@ -364,6 +364,18 @@ export default function DashboardPage() {
                   {profitBersih !== null ? (profitBersih >= 0 ? '+' : '') + formatRupiah(profitBersih) : '-'}
                 </p>
                 <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>Kas sekarang dikurangi modal awal</p>
+                {profitBersih !== null && profitBersih > 0 && sellingPrice > 0 && hpp > 0 && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #BBF7D0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 11, color: '#64748B' }}>HPP (modal muter)</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#D97706' }}>{formatRupiah(Math.round(profitBersih * hppPct / 100))}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 11, color: '#64748B' }}>Untung murni</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#16A34A' }}>{formatRupiah(Math.round(profitBersih * (100 - hppPct) / 100))}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ROI */}
