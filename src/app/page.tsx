@@ -268,6 +268,12 @@ export default function DashboardPage() {
         <StatCard title="Total Pemasukan" value={formatRupiah(stats.totalIncome)} icon={TrendingUp} color="green" />
         <StatCard title="Total Pengeluaran" value={formatRupiah(stats.totalExpense)} icon={ShoppingBag} color="amber" />
         <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
+        {profitBersih !== null && profitBersih > 0 && sellingPrice > 0 && hpp > 0 && (
+          <StatCard title="HPP (modal muter)" value={formatRupiah(Math.round(profitBersih * hppPct / 100))} subtitle="Dari profit bersih" icon={PiggyBank} color="amber" />
+        )}
+        {profitBersih !== null && profitBersih > 0 && sellingPrice > 0 && hpp > 0 && (
+          <StatCard title="Untung murni" value={formatRupiah(Math.round(profitBersih * (100 - hppPct) / 100))} subtitle="Dari profit bersih" icon={TrendingUp} color="green" />
+        )}
         {totalPiutang > 0 && (
           <StatCard title="Piutang Reseller" value={formatRupiah(totalPiutang)} icon={Wallet} color="amber" />
         )}
