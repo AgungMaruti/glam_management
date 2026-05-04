@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useRef } from 'react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { Wallet, TrendingUp, ShoppingBag, AlertTriangle, LayoutDashboard, Edit2, Check, X, PiggyBank, TrendingDown, Percent, Plus } from 'lucide-react'
+import { Wallet, TrendingUp, ShoppingBag, AlertTriangle, LayoutDashboard, Edit2, Check, X, PiggyBank, TrendingDown, Percent, Plus, Layers, ArrowUpRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
 import StatCard from '@/components/ui/StatCard'
@@ -268,6 +268,12 @@ export default function DashboardPage() {
         <StatCard title="Total Pemasukan" value={formatRupiah(stats.totalIncome)} icon={TrendingUp} color="green" />
         <StatCard title="Total Pengeluaran" value={formatRupiah(stats.totalExpense)} icon={ShoppingBag} color="amber" />
         <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
+        {totalSold > 0 && sellingPrice > 0 && (
+          <StatCard title="Balik Modal (HPP)" value={formatRupiah(totalHpp)} subtitle={`${hppPct.toFixed(1)}% dari omzet · ${totalSold} pcs`} icon={Layers} color="amber" />
+        )}
+        {totalSold > 0 && sellingPrice > 0 && (
+          <StatCard title="Untung Bersih" value={formatRupiah(grossProfit)} subtitle={`Margin ${margin}% · ${totalSold} pcs`} icon={ArrowUpRight} color="green" />
+        )}
         {totalPiutang > 0 && (
           <StatCard title="Piutang Reseller" value={formatRupiah(totalPiutang)} icon={Wallet} color="amber" />
         )}
