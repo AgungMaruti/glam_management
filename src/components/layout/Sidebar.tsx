@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X, ShoppingCart } from 'lucide-react'
+import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X, ShoppingCart, LogOut } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 const nav = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +36,7 @@ function Brand() {
 }
 
 function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
+  const { user, logout } = useAuth()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Brand */}
@@ -73,7 +75,7 @@ function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => v
                 onMouseEnter={e => {
                   if (!active) {
                     (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'
-                    ;(e.currentTarget as HTMLDivElement).style.color = '#334155'
+                    ;(e.currentTarget as HTMLDivElement).style.color = '#334555'
                   }
                 }}
                 onMouseLeave={e => {
@@ -97,10 +99,53 @@ function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => v
         })}
       </nav>
 
-      {/* Footer */}
+      {/* User & Footer */}
       <div style={{ padding: '8px 16px 16px' }}>
         <div style={{ height: 1, background: '#F1F5F9', marginBottom: 12 }} />
-        <p style={{ fontSize: 11, color: '#CBD5E1', padding: '0 10px' }}>Perfume Suite · v1.0 · 2026</p>
+        
+        {/* User Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 10px 10px' }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: 8,
+            background: '#EEF2FF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 700, color: '#6366F1',
+            flexShrink: 0,
+          }}>
+            {user?.email?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.email || 'User'}
+            </p>
+            <p style={{ fontSize: 10, color: '#94A3B8' }}>{user?.email || ''}</p>
+          </div>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 10px',
+            borderRadius: 8,
+            border: 'none',
+            background: '#FEF2F2',
+            color: '#DC2626',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <LogOut size={14} />
+          Keluar
+        </button>
+
+        <p style={{ fontSize: 11, color: '#CBD5E1', padding: '10px 10px 0', textAlign: 'center' }}>Perfume Suite · v1.0 · 2026</p>
       </div>
     </div>
   )

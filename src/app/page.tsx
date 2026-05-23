@@ -6,6 +6,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Wallet, TrendingUp, ShoppingBag, AlertTriangle, LayoutDashboard, Edit2, Check, X, PiggyBank, TrendingDown, Percent, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatRupiah } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toaster'
 import StatCard from '@/components/ui/StatCard'
 import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/ui/Modal'
@@ -57,6 +58,7 @@ function EditableRow({ label, value, onSave, color }: { label: string; value: nu
 }
 
 export default function DashboardPage() {
+  const { toast } = useToast()
   const [stats, setStats] = useState({ totalSaldo: 0, totalIncome: 0, totalExpense: 0, criticalStock: 0 })
   const [salesChart, setSalesChart] = useState<any[]>([])
   const [cfChart, setCfChart] = useState<any[]>([])
@@ -186,8 +188,10 @@ export default function DashboardPage() {
         else byMonth[k].expense += c.amount
       })
       setCfChart(Object.values(byMonth).slice(-6))
-    } catch {}
-    finally { setLoading(false) }
+    } catch (err: any) {
+      console.error('Dashboard load error:', err)
+      toast({ title: 'Gagal memuat data', description: err?.message || 'Terjadi kesalahan saat mengambil data dashboard', variant: 'error' })
+    } finally { setLoading(false) }
   }
 
   async function saveSetting(key: string, value: number) {

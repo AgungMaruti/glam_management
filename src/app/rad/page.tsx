@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { Calculator, Plus, Trash2, ChevronDown, ChevronUp, Users, DollarSign, Package, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toaster'
 import { formatRupiah } from '@/lib/utils'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -36,6 +37,7 @@ function getHpp(items: RADItemDB[]) {
 }
 
 export default function RADPage() {
+  const { toast } = useToast()
   const [rads, setRads] = useState<RAD[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -51,9 +53,15 @@ export default function RADPage() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await supabase.from('rad').select('*, items:rad_items(*)').order('created_at', { ascending: false })
-    setRads(data || [])
-    setLoading(false)
+    try {
+      const { data } = await supabase.from('rad').select('*, items:rad_items(*)').order('created_at', { ascending: false })
+      setRads(data || [])
+    } catch (err: any) {
+      console.error('RAD load error:', err)
+      toast({ title: 'Gagal memuat data', description: err?.message || 'Terjadi kesalahan saat mengambil data RAD', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const prevHpp = items.reduce((s, i) => s + cpb(i), 0)

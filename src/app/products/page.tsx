@@ -2,9 +2,11 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { FlaskConical, Plus, Trash2, Edit2, Package, AlertTriangle, Send, ShoppingBag, Wallet } from 'lucide-react'
+import { FlaskConical, Plus, Trash2, Edit2, Package, AlertTriangle, Send, ShoppingBag, Wallet, Search, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toaster'
 import { formatRupiah } from '@/lib/utils'
+import { exportCSV } from '@/lib/csv'
 import { Product, Variant, Reseller } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -14,6 +16,7 @@ import NumInput from '@/components/ui/NumInput'
 type Mode = 'add-product' | 'edit-product' | 'add-variant' | 'edit-variant' | 'distribusi' | 'jual-sendiri' | 'reseller-bayar' | null
 
 export default function ProductsPage() {
+  const { toast } = useToast()
   const [products, setProducts] = useState<(Product & { variants: Variant[] })[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -28,38 +31,45 @@ export default function ProductsPage() {
   const [resellers, setResellers] = useState<Reseller[]>([])
   const [distResellerInput, setDistResellerInput] = useState('')
   const [showResellerDropdown, setShowResellerDropdown] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [prodRes, salesRes, productsRes, resellersRes] = await Promise.all([
-      supabase.from('productions').select('variant_id, quantity'),
-      supabase.from('sales').select('variant_id, quantity'),
-      supabase.from('products').select('*, variants(*)').order('created_at', { ascending: false }),
-      supabase.from('resellers').select('*').order('name'),
-    ])
+    try {
+      const [prodRes, salesRes, productsRes, resellersRes] = await Promise.all([
+        supabase.from('productions').select('variant_id, quantity'),
+        supabase.from('sales').select('variant_id, quantity'),
+        supabase.from('products').select('*, variants(*)').order('created_at', { ascending: false }),
+        supabase.from('resellers').select('*').order('name'),
+      ])
 
-    const productions = prodRes.data || []
-    const sales = salesRes.data || []
-    const rawProducts = productsRes.data || []
+      const productions = prodRes.data || []
+      const sales = salesRes.data || []
+      const rawProducts = productsRes.data || []
 
-    const producedMap: Record<string, number> = {}
-    productions.forEach(p => { producedMap[p.variant_id] = (producedMap[p.variant_id] || 0) + p.quantity })
-    const soldMap: Record<string, number> = {}
-    sales.forEach(s => { soldMap[s.variant_id] = (soldMap[s.variant_id] || 0) + s.quantity })
+      const producedMap: Record<string, number> = {}
+      productions.forEach(p => { producedMap[p.variant_id] = (producedMap[p.variant_id] || 0) + p.quantity })
+      const soldMap: Record<string, number> = {}
+      sales.forEach(s => { soldMap[s.variant_id] = (soldMap[s.variant_id] || 0) + s.quantity })
 
-    const enriched = rawProducts.map(product => ({
-      ...product,
-      variants: product.variants.map((v: Variant) => ({
-        ...v,
-        total_produced: producedMap[v.id] || 0,
-        total_sold: soldMap[v.id] || 0,
-      })),
-    }))
+      const enriched = rawProducts.map(product => ({
+        ...product,
+        variants: product.variants.map((v: Variant) => ({
+          ...v,
+          total_produced: producedMap[v.id] || 0,
+          total_sold: soldMap[v.id] || 0,
+        })),
+      }))
 
-    setProducts(enriched)
-    setResellers(resellersRes.data || [])
-    setLoading(false)
+      setProducts(enriched)
+      setResellers(resellersRes.data || [])
+    } catch (err: any) {
+      console.error('Products load error:', err)
+      toast({ title: 'Gagal memuat data', description: err?.message || 'Terjadi kesalahan saat mengambil data produk', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function saveProduct() {
@@ -202,7 +212,29 @@ export default function ProductsPage() {
     <div className="page-sections">
       <PageHeader
         title="Produk & Varian" subtitle="Kelola katalog dan varian parfum kamu" icon={FlaskConical}
-        action={<Button icon={Plus} onClick={() => { setPForm({ name: '', description: '' }); setMode('add-product') }}>Tambah Produk</Button>}
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span className="show-sm"><Button variant="ghost" size="sm" icon={Download} onClick={() => {
+              const rows = products.flatMap(p => p.variants.map(v => ({
+                produk: p.name,
+                varian: v.name,
+                ukuran_ml: v.size_ml,
+                harga_jual: v.selling_price,
+                stok_sendiri: v.stock,
+                stok_reseller: v.stock_reseller,
+              })))
+              exportCSV(rows, [
+                { key: 'produk', label: 'Produk' },
+                { key: 'varian', label: 'Varian' },
+                { key: 'ukuran_ml', label: 'Ukuran (ml)' },
+                { key: 'harga_jual', label: 'Harga Jual' },
+                { key: 'stok_sendiri', label: 'Stok Sendiri' },
+                { key: 'stok_reseller', label: 'Stok Reseller' },
+              ], 'produk_varian')
+            }}>Export CSV</Button></span>
+            <Button icon={Plus} size="sm" onClick={() => { setPForm({ name: '', description: '' }); setMode('add-product') }}>Tambah Produk</Button>
+          </div>
+        }
       />
 
       {products.length === 0 ? (
@@ -215,7 +247,32 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {products.map(product => (
+          <div style={{ position: 'relative' }}>
+            <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              className="field"
+              placeholder="Cari produk atau varian..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: 38 }}
+            />
+          </div>
+          {((): any => {
+            const filtered = products.filter(p =>
+              !searchQuery ||
+              p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              p.variants.some(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            )
+            if (filtered.length === 0) {
+              return (
+                <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
+                  <p style={{ color: '#94A3B8', fontSize: 14 }}>Tidak ada hasil pencarian</p>
+                </div>
+              )
+            }
+            return (
+              <>
+          {filtered.map(product => (
             <div key={product.id} className="card" style={{ overflow: 'hidden' }}>
               {/* Product header */}
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -355,6 +412,9 @@ export default function ProductsPage() {
               </div>
             </div>
           ))}
+              </>
+            )
+          })()}
         </div>
       )}
 

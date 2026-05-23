@@ -2,9 +2,11 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, ShoppingBag, Wallet, Edit2, Printer } from 'lucide-react'
+import { TrendingUp, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, ShoppingBag, Wallet, Edit2, Printer, Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toaster'
 import { formatRupiah } from '@/lib/utils'
+import { exportCSV } from '@/lib/csv'
 import { Cashflow, Variant } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -149,6 +151,7 @@ function printLaporan(data: {
 }
 
 export default function CashflowPage() {
+  const { toast } = useToast()
   const [cashflows, setCashflows] = useState<Cashflow[]>([])
   const [variants, setVariants] = useState<Variant[]>([])
   const [period, setPeriod] = useState<Period>('monthly')
@@ -163,6 +166,13 @@ export default function CashflowPage() {
   const [saldoAwal, setSaldoAwal] = useState<Cashflow | null>(null)
   const [saldoInput, setSaldoInput] = useState('')
 
+  // Pagination
+  const [page, setPage] = useState(1)
+  const pageSize = 20
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState('')
+
   // Print filters
   const [printPeriod, setPrintPeriod] = useState<Period>('monthly')
   const [printDateFrom, setPrintDateFrom] = useState('')
@@ -172,18 +182,25 @@ export default function CashflowPage() {
   const [useCustomDate, setUseCustomDate] = useState(false)
 
   useEffect(() => { load() }, [])
+  useEffect(() => { setPage(1) }, [period, searchQuery])
 
   async function load() {
-    const [cf, vr] = await Promise.all([
-      supabase.from('cashflow').select('*').order('transaction_date', { ascending: false }),
-      supabase.from('variants').select('*').order('name'),
-    ])
-    const all = cf.data || []
-    setCashflows(all)
-    setVariants(vr.data || [])
-    const sa = all.find(c => c.category === 'Saldo Awal')
-    setSaldoAwal(sa || null)
-    setLoading(false)
+    try {
+      const [cf, vr] = await Promise.all([
+        supabase.from('cashflow').select('*').order('transaction_date', { ascending: false }),
+        supabase.from('variants').select('*').order('name'),
+      ])
+      const all = cf.data || []
+      setCashflows(all)
+      setVariants(vr.data || [])
+      const sa = all.find(c => c.category === 'Saldo Awal')
+      setSaldoAwal(sa || null)
+    } catch (err: any) {
+      console.error('Cashflow load error:', err)
+      toast({ title: 'Gagal memuat data', description: err?.message || 'Terjadi kesalahan saat mengambil data cashflow', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   function filterByPeriodKey(items: Cashflow[], p: Period) {
@@ -198,7 +215,16 @@ export default function CashflowPage() {
     })
   }
 
-  const filtered = filterByPeriodKey(cashflows, period)
+  const filtered = filterByPeriodKey(cashflows, period).filter(c =>
+    !searchQuery ||
+    c.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.description && c.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const startIdx = (page - 1) * pageSize
+  const paginated = filtered.slice(startIdx, startIdx + pageSize)
   const saldoAwalAmount = saldoAwal?.amount || 0
   const allTxs = cashflows.filter(c => c.category !== 'Saldo Awal')
   const allIncome = allTxs.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
@@ -294,6 +320,13 @@ export default function CashflowPage() {
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <span className="show-sm"><Button variant="ghost" size="sm" icon={Printer} onClick={() => setShowPrintModal(true)}>Cetak</Button></span>
+            <span className="show-sm"><Button variant="ghost" size="sm" icon={Download} onClick={() => exportCSV(filtered, [
+              { key: 'transaction_date', label: 'Tanggal' },
+              { key: 'category', label: 'Kategori' },
+              { key: 'type', label: 'Jenis' },
+              { key: 'amount', label: 'Nominal' },
+              { key: 'description', label: 'Keterangan' },
+            ], 'cashflow')}>Export CSV</Button></span>
             <span className="show-sm"><Button variant="outline" size="sm" icon={ShoppingBag} onClick={() => setShowSaleModal(true)}>Catat Penjualan</Button></span>
             <Button icon={Plus} size="sm" onClick={() => setShowModal(true)}>Transaksi</Button>
           </div>
@@ -359,18 +392,30 @@ export default function CashflowPage() {
 
       {/* Transactions */}
       <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1.5px solid #F0EDE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Riwayat Transaksi</h3>
-          <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>{filtered.length} transaksi</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                className="field"
+                placeholder="Cari..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ padding: '6px 10px 6px 30px', fontSize: 13, width: 160 }}
+              />
+            </div>
+            <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>{filtered.length} transaksi</span>
+          </div>
         </div>
-        {filtered.length === 0 ? (
+        {paginated.length === 0 ? (
           <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: '#9CA3AF' }}>Belum ada transaksi di periode ini</p>
+            <p style={{ fontSize: 14, color: '#9CA3AF' }}>{searchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada transaksi di periode ini'}</p>
           </div>
         ) : (
           <div>
-            {filtered.map((c, i) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #F5F3EF' : 'none', transition: 'background .15s' }}
+            {paginated.map((c, i) => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: i < paginated.length - 1 ? '1px solid #F5F3EF' : 'none', transition: 'background .15s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#FAFAF8'}
                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: c.type === 'income' ? '#F0FDF4' : '#FEF2F2' }}>
@@ -394,6 +439,55 @@ export default function CashflowPage() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ padding: '12px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ fontSize: 12, color: '#94A3B8' }}>
+              {filtered.length > 0 ? `${startIdx + 1}-${Math.min(startIdx + pageSize, filtered.length)} dari ${filtered.length}` : '0 transaksi'}
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E2E8F0',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: page <= 1 ? '#CBD5E1' : '#334155',
+                  cursor: page <= 1 ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <ChevronLeft size={14} /> Sebelumnya
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E2E8F0',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: page >= totalPages ? '#CBD5E1' : '#334155',
+                  cursor: page >= totalPages ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                Selanjutnya <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>

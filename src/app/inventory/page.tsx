@@ -2,9 +2,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus, Pencil } from 'lucide-react'
+import { Boxes, Plus, Trash2, FlaskConical, Zap, PackagePlus, Pencil, Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { formatRupiah } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toaster'
+import { exportCSV } from '@/lib/csv'
 import { RawMaterial, Variant, Recipe, Production } from '@/types'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -15,6 +16,7 @@ import NumInput from '@/components/ui/NumInput'
 type Tab = 'materials' | 'recipe' | 'production'
 
 export default function InventoryPage() {
+  const { toast } = useToast()
   const [tab, setTab] = useState<Tab>('materials')
   const [materials, setMaterials] = useState<RawMaterial[]>([])
   const [variants, setVariants] = useState<(Variant & { recipes: (Recipe & { raw_material: RawMaterial })[] })[]>([])
@@ -23,17 +25,23 @@ export default function InventoryPage() {
   const [showMatModal, setShowMatModal] = useState(false)
   const [showRecipeModal, setShowRecipeModal] = useState(false)
   const [showProdModal, setShowProdModal] = useState(false)
-  const [matForm, setMatForm] = useState({ name: '', unit: 'ml', stock: '', qty_beli: '', min_stock: '', total_cost: '', cost_per_unit: '' })
+  const [matForm, setMatForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '' })
   const [recipeForm, setRecipeForm] = useState({ variant_id: '', raw_material_id: '', quantity_needed: '' })
   const [prodForm, setProdForm] = useState({ variant_id: '', quantity: '', notes: '' })
   const [preview, setPreview] = useState<{ name: string; needed: number; available: number; ok: boolean }[]>([])
   const [restockMat, setRestockMat] = useState<RawMaterial | null>(null)
   const [restockForm, setRestockForm] = useState({ qty: '', total_cost: '', catat_cashflow: true })
   const [editMat, setEditMat] = useState<RawMaterial | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '', cost_per_unit: '' })
+  const [editForm, setEditForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '' })
   const [productions, setProductions] = useState<(Production & { variant: Variant })[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Pagination for productions
+  const [prodPage, setProdPage] = useState(1)
+  const prodPageSize = 15
 
   useEffect(() => { load() }, [])
+  useEffect(() => { setProdPage(1) }, [tab])
 
   useEffect(() => {
     if (prodForm.variant_id && prodForm.quantity) {
@@ -46,22 +54,28 @@ export default function InventoryPage() {
   }, [prodForm.variant_id, prodForm.quantity, variants])
 
   async function load() {
-    const [mRes, vRes, pRes] = await Promise.all([
-      supabase.from('raw_materials').select('*').order('name'),
-      supabase.from('variants').select('*, recipes(*, raw_material:raw_materials(*))').order('name'),
-      supabase.from('productions').select('*, variant:variants(*)').order('produced_at', { ascending: false }).limit(50),
-    ])
-    setMaterials(mRes.data || [])
-    setVariants(vRes.data || [])
-    setProductions(pRes.data || [])
-    setLoading(false)
+    try {
+      const [mRes, vRes, pRes] = await Promise.all([
+        supabase.from('raw_materials').select('*').order('name'),
+        supabase.from('variants').select('*, recipes(*, raw_material:raw_materials(*))').order('name'),
+        supabase.from('productions').select('*, variant:variants(*)').order('produced_at', { ascending: false }).limit(50),
+      ])
+      setMaterials(mRes.data || [])
+      setVariants(vRes.data || [])
+      setProductions(pRes.data || [])
+    } catch (err: any) {
+      console.error('Inventory load error:', err)
+      toast({ title: 'Gagal memuat data', description: err?.message || 'Terjadi kesalahan saat mengambil data inventori', variant: 'error' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function saveMaterial() {
     if (!matForm.name) return
     setSaving(true)
-    await supabase.from('raw_materials').insert({ name: matForm.name, unit: matForm.unit, stock: parseFloat(matForm.stock) || 0, min_stock: parseFloat(matForm.min_stock) || 0, cost_per_unit: parseFloat(matForm.cost_per_unit) || 0 })
-    setMatForm({ name: '', unit: 'ml', stock: '', qty_beli: '', min_stock: '', total_cost: '', cost_per_unit: '' })
+    await supabase.from('raw_materials').insert({ name: matForm.name, unit: matForm.unit, stock: parseFloat(matForm.stock) || 0, min_stock: parseFloat(matForm.min_stock) || 0 })
+    setMatForm({ name: '', unit: 'ml', stock: '', min_stock: '' })
     setShowMatModal(false); setSaving(false); load()
   }
 
@@ -101,7 +115,6 @@ export default function InventoryPage() {
       unit: editForm.unit,
       stock: parseFloat(editForm.stock) || 0,
       min_stock: parseFloat(editForm.min_stock) || 0,
-      cost_per_unit: parseFloat(editForm.cost_per_unit) || 0,
     }).eq('id', editMat.id)
     setEditMat(null)
     setSaving(false)
@@ -115,15 +128,14 @@ export default function InventoryPage() {
     const newStock = restockMat.stock + addQty
     const totalCost = parseFloat(restockForm.total_cost) || 0
 
-    // Weighted average cost per unit
-    const newCpu = totalCost > 0
-      ? ((restockMat.cost_per_unit * restockMat.stock) + totalCost) / newStock
-      : restockMat.cost_per_unit
+    const updateData: any = { stock: newStock }
+    
+    if (totalCost > 0) {
+      const newCpu = ((restockMat.cost_per_unit * restockMat.stock) + totalCost) / newStock
+      updateData.cost_per_unit = parseFloat(newCpu.toFixed(2))
+    }
 
-    await supabase.from('raw_materials').update({
-      stock: newStock,
-      cost_per_unit: parseFloat(newCpu.toFixed(2)),
-    }).eq('id', restockMat.id)
+    await supabase.from('raw_materials').update(updateData).eq('id', restockMat.id)
 
     if (restockForm.catat_cashflow && totalCost > 0) {
       await supabase.from('cashflow').insert({
@@ -147,6 +159,10 @@ export default function InventoryPage() {
     { key: 'production', label: 'Produksi', icon: Zap },
   ]
 
+  const filteredMaterials = materials.filter(m => 
+    m.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   if (loading) return <Spinner />
 
   return (
@@ -154,7 +170,17 @@ export default function InventoryPage() {
       <PageHeader title="Inventori" subtitle="Kelola bahan baku, resep, dan produksi batch" icon={Boxes}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
-            {tab === 'materials' && <Button icon={Plus} size="md" onClick={() => setShowMatModal(true)}>Bahan Baku</Button>}
+            {tab === 'materials' && (
+              <>
+                <span className="show-sm"><Button variant="ghost" size="sm" icon={Download} onClick={() => exportCSV(filteredMaterials, [
+                  { key: 'name', label: 'Nama Bahan' },
+                  { key: 'unit', label: 'Satuan' },
+                  { key: 'stock', label: 'Stok' },
+                  { key: 'min_stock', label: 'Stok Minimum' },
+                ], 'bahan_baku')}>Export CSV</Button></span>
+                <Button icon={Plus} size="sm" onClick={() => setShowMatModal(true)}>Bahan Baku</Button>
+              </>
+            )}
             {tab === 'recipe' && <Button icon={Plus} size="md" onClick={() => setShowRecipeModal(true)}>Tambah Resep</Button>}
             {tab === 'production' && <Button icon={Zap} size="md" onClick={() => setShowProdModal(true)}>Produksi</Button>}
           </div>
@@ -183,48 +209,60 @@ export default function InventoryPage() {
                 <p style={{ color: '#94A3B8', fontSize: 14 }}>Belum ada bahan baku</p>
               </div>
             ) : (
-              <div className="mat-grid">
-                {materials.map(m => {
-                  const critical = m.stock <= m.min_stock
-                  const pct = Math.min((m.stock / Math.max(m.min_stock * 3, 1)) * 100, 100)
-                  return (
-                    <div key={m.id} className="card" style={{ padding: '12px 14px', ...(critical ? { borderColor: '#FCA5A5' } : {}) }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
-                          <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>{formatRupiah(m.cost_per_unit)}/{m.unit}</p>
+              <div>
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                  <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input 
+                    className="field" 
+                    placeholder="Cari bahan baku..." 
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ paddingLeft: 38 }}
+                  />
+                </div>
+                <div className="mat-grid">
+                  {filteredMaterials.map(m => {
+                    const critical = m.stock <= m.min_stock
+                    const pct = Math.min((m.stock / Math.max(m.min_stock * 3, 1)) * 100, 100)
+                    return (
+                      <div key={m.id} className="card" style={{ padding: '12px 14px', ...(critical ? { borderColor: '#FCA5A5' } : {}) }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</p>
+                            <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>{m.unit}</p>
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, marginLeft: 4 }}>
+                            {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', fontSize: 9 }}>!</span>}
+                            <button onClick={() => { setEditMat(m); setEditForm({ name: m.name, unit: m.unit, stock: String(m.stock), min_stock: String(m.min_stock) }) }}
+                              style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4'; (e.currentTarget as HTMLButtonElement).style.color = '#16A34A' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                              <Pencil size={11} />
+                            </button>
+                            <button onClick={() => { setRestockMat(m); setRestockForm({ qty: '', total_cost: '', catat_cashflow: true }) }}
+                              style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                              <PackagePlus size={11} />
+                            </button>
+                            <button onClick={() => deleteMaterial(m.id)}
+                              style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, marginLeft: 4 }}>
-                          {critical && <span className="badge" style={{ background: '#FEE2E2', color: '#B91C1C', fontSize: 9 }}>!</span>}
-                          <button onClick={() => { setEditMat(m); setEditForm({ name: m.name, unit: m.unit, stock: String(m.stock), min_stock: String(m.min_stock), cost_per_unit: String(m.cost_per_unit) }) }}
-                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F0FDF4'; (e.currentTarget as HTMLButtonElement).style.color = '#16A34A' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
-                            <Pencil size={11} />
-                          </button>
-                          <button onClick={() => { setRestockMat(m); setRestockForm({ qty: '', total_cost: '', catat_cashflow: true }) }}
-                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
-                            <PackagePlus size={11} />
-                          </button>
-                          <button onClick={() => deleteMaterial(m.id)}
-                            style={{ width: 24, height: 24, borderRadius: 6, background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626' }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1' }}>
-                            <Trash2 size={11} />
-                          </button>
+                        <p style={{ fontSize: 22, fontWeight: 800, color: critical ? '#DC2626' : '#0F172A', letterSpacing: '-0.03em', marginBottom: 1 }}>{m.stock}</p>
+                        <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 8 }}>{m.unit} tersisa</p>
+                        <div style={{ height: 4, borderRadius: 99, background: '#F3F4F6', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 99, background: critical ? '#EF4444' : '#6366F1', width: `${pct}%`, transition: 'width .3s' }} />
                         </div>
+                        <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 5 }}>Min: {m.min_stock} {m.unit}</p>
                       </div>
-                      <p style={{ fontSize: 22, fontWeight: 800, color: critical ? '#DC2626' : '#0F172A', letterSpacing: '-0.03em', marginBottom: 1 }}>{m.stock}</p>
-                      <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 8 }}>{m.unit} tersisa</p>
-                      <div style={{ height: 4, borderRadius: 99, background: '#F3F4F6', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: 99, background: critical ? '#EF4444' : '#6366F1', width: `${pct}%`, transition: 'width .3s' }} />
-                      </div>
-                      <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 5 }}>Min: {m.min_stock} {m.unit}</p>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -237,34 +275,23 @@ export default function InventoryPage() {
                 <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
                   <p style={{ color: '#94A3B8', fontSize: 14 }}>Tambah produk & varian terlebih dahulu</p>
                 </div>
-              ) : variants.map(v => {
-                const hppDariResep = v.recipes.reduce((sum, r) => sum + (r.quantity_needed * (r.raw_material?.cost_per_unit || 0)), 0)
-                return (
+              ) : variants.map(v => (
                 <div key={v.id} className="card" style={{ padding: '14px 18px' }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>{v.name}</p>
                   {v.recipes.length > 0 ? (
-                    <>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {v.recipes.map(r => (
-                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F8FAFC' }}>
-                            <span style={{ fontSize: 13, color: '#334155' }}>{r.raw_material?.name}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 11, color: '#94A3B8' }}>{r.quantity_needed} {r.raw_material?.unit} × {formatRupiah(r.raw_material?.cost_per_unit || 0)}</span>
-                              <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{formatRupiah(r.quantity_needed * (r.raw_material?.cost_per_unit || 0))}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>HPP dari resep</span>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: '#C2410C' }}>{formatRupiah(hppDariResep)}/botol</span>
-                      </div>
-                    </>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {v.recipes.map(r => (
+                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: '#F8FAFC' }}>
+                          <span style={{ fontSize: 13, color: '#334155' }}>{r.raw_material?.name}</span>
+                          <span style={{ fontSize: 11, color: '#94A3B8' }}>{r.quantity_needed} {r.raw_material?.unit}</span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <p style={{ fontSize: 13, color: '#94A3B8' }}>Belum ada resep</p>
                   )}
                 </div>
-              )})}
+              ))}
             </div>
           </div>
         )}
@@ -282,22 +309,57 @@ export default function InventoryPage() {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Riwayat Produksi</p>
-                {productions.map(p => {
-                  const date = new Date(p.produced_at)
-                  const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                  const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Riwayat Produksi</p>
+                  <span className="badge" style={{ background: '#F3F4F6', color: '#6B7280' }}>{productions.length} produksi</span>
+                </div>
+                {((): any => {
+                  const totalPages = Math.ceil(productions.length / prodPageSize)
+                  const startIdx = (prodPage - 1) * prodPageSize
+                  const paginated = productions.slice(startIdx, startIdx + prodPageSize)
                   return (
-                    <div key={p.id} className="card" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.variant?.name || '—'}</p>
-                        {p.notes && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.notes}</p>}
-                        <p style={{ fontSize: 11, color: '#CBD5E1', marginTop: 2 }}>{dateStr} · {timeStr}</p>
-                      </div>
-                      <span className="badge" style={{ background: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: 13, flexShrink: 0, marginLeft: 12 }}>+{p.quantity} pcs</span>
-                    </div>
+                    <>
+                      {paginated.map(p => {
+                        const date = new Date(p.produced_at)
+                        const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                        const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                        return (
+                          <div key={p.id} className="card" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.variant?.name || '—'}</p>
+                              {p.notes && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.notes}</p>}
+                              <p style={{ fontSize: 11, color: '#CBD5E1', marginTop: 2 }}>{dateStr} · {timeStr}</p>
+                            </div>
+                            <span className="badge" style={{ background: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: 13, flexShrink: 0, marginLeft: 12 }}>+{p.quantity} pcs</span>
+                          </div>
+                        )
+                      })}
+                      {totalPages > 1 && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 4px' }}>
+                          <p style={{ fontSize: 12, color: '#94A3B8' }}>
+                            {productions.length > 0 ? `${startIdx + 1}-${Math.min(startIdx + prodPageSize, productions.length)} dari ${productions.length}` : ''}
+                          </p>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              onClick={() => setProdPage(p => Math.max(1, p - 1))}
+                              disabled={prodPage <= 1}
+                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, color: prodPage <= 1 ? '#CBD5E1' : '#334155', cursor: prodPage <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                            >
+                              <ChevronLeft size={14} /> Sebelumnya
+                            </button>
+                            <button
+                              onClick={() => setProdPage(p => Math.min(totalPages, p + 1))}
+                              disabled={prodPage >= totalPages}
+                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, color: prodPage >= totalPages ? '#CBD5E1' : '#334155', cursor: prodPage >= totalPages ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                            >
+                              Selanjutnya <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )
-                })}
+                })()}
               </>
             )}
           </div>
@@ -314,7 +376,6 @@ export default function InventoryPage() {
                 <p style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{restockMat.name}</p>
                 <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>Stok saat ini: <strong style={{ color: '#0F172A' }}>{restockMat.stock} {restockMat.unit}</strong></p>
               </div>
-              <span className="badge" style={{ background: '#EEF2FF', color: '#4338CA' }}>{formatRupiah(restockMat.cost_per_unit)}/{restockMat.unit}</span>
             </div>
 
             <div>
@@ -325,9 +386,9 @@ export default function InventoryPage() {
 
             <div>
               <label style={lbl}>Total Harga Beli (Rp)</label>
-              <NumInput placeholder="50.000" value={restockForm.total_cost}
+              <NumInput placeholder="Opsional — untuk hitung modal" value={restockForm.total_cost}
                 onChange={v => setRestockForm(f => ({ ...f, total_cost: v }))} />
-              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Opsional — untuk update harga per {restockMat.unit} otomatis.</p>
+              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Opsional — hanya untuk perhitungan modal di RAD.</p>
             </div>
 
             {/* Preview update */}
@@ -338,17 +399,6 @@ export default function InventoryPage() {
                   <span style={{ color: '#64748B' }}>Stok baru</span>
                   <span style={{ fontWeight: 700, color: '#0F172A' }}>{restockMat.stock + (parseFloat(restockForm.qty) || 0)} {restockMat.unit}</span>
                 </div>
-                {restockForm.total_cost && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 4 }}>
-                    <span style={{ color: '#64748B' }}>Harga/unit (rata-rata)</span>
-                    <span style={{ fontWeight: 700, color: '#4338CA' }}>
-                      {formatRupiah(parseFloat((
-                        (restockMat.cost_per_unit * restockMat.stock + parseFloat(restockForm.total_cost)) /
-                        (restockMat.stock + parseFloat(restockForm.qty))
-                      ).toFixed(2)))}/{restockMat.unit}
-                    </span>
-                  </div>
-                )}
               </div>
             )}
 
@@ -386,9 +436,6 @@ export default function InventoryPage() {
                 <input className="field" type="number" value={editForm.stock} onChange={e => setEditForm(f => ({ ...f, stock: e.target.value }))} />
               </div>
             </div>
-            <div><label style={lbl}>Harga per {editForm.unit} (Rp)</label>
-              <input className="field" type="number" value={editForm.cost_per_unit} onChange={e => setEditForm(f => ({ ...f, cost_per_unit: e.target.value }))} />
-            </div>
             <div><label style={lbl}>Stok Min ({editForm.unit})</label>
               <input className="field" type="number" value={editForm.min_stock} onChange={e => setEditForm(f => ({ ...f, min_stock: e.target.value }))} />
             </div>
@@ -409,53 +456,8 @@ export default function InventoryPage() {
               <Select value={matForm.unit} onChange={v => setMatForm(f => ({ ...f, unit: v }))}
                 options={['ml', 'gram', 'pcs', 'liter', 'kg'].map(u => ({ value: u, label: u }))} />
             </div>
-            <div><label style={lbl}>Stok Saat Ini ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.stock} onChange={e => {
-              setMatForm(f => ({ ...f, stock: e.target.value }))
-            }} /></div>
+            <div><label style={lbl}>Stok Saat Ini ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.stock} onChange={e => setMatForm(f => ({ ...f, stock: e.target.value }))} /></div>
           </div>
-
-          {/* Harga: bisa input total+qty atau langsung per satuan */}
-          <div style={{ background: '#F8FAFC', borderRadius: 10, padding: '12px 14px', border: '1px solid #E2E8F0' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Harga Bahan</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-              <div>
-                <label style={lbl}>Harga Beli Total (Rp)</label>
-                <NumInput placeholder="17.000" value={matForm.total_cost}
-                  onChange={total => {
-                    const cpu = total && matForm.qty_beli ? (parseFloat(total) / parseFloat(matForm.qty_beli)).toFixed(2) : ''
-                    setMatForm(f => ({ ...f, total_cost: total, cost_per_unit: cpu }))
-                  }} />
-              </div>
-              <div>
-                <label style={lbl}>Dapat ({matForm.unit})</label>
-                <input className="field" type="number" placeholder="100" value={matForm.qty_beli}
-                  onChange={e => {
-                    const qty_beli = e.target.value
-                    const cpu = matForm.total_cost && qty_beli ? (parseFloat(matForm.total_cost) / parseFloat(qty_beli)).toFixed(2) : ''
-                    setMatForm(f => ({ ...f, qty_beli, cost_per_unit: cpu }))
-                  }} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-              <span style={{ fontSize: 11, color: '#94A3B8' }}>atau langsung input</span>
-              <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <label style={lbl}>Harga per {matForm.unit} (Rp)</label>
-              <input className="field" type="number" placeholder="170"
-                value={matForm.cost_per_unit}
-                onChange={e => setMatForm(f => ({ ...f, cost_per_unit: e.target.value, total_cost: '' }))}
-                style={matForm.total_cost && matForm.qty_beli ? { background: '#EEF2FF', borderColor: '#6366F1', fontWeight: 700 } : {}}
-              />
-              {matForm.total_cost && matForm.qty_beli && (
-                <p style={{ fontSize: 11, color: '#6366F1', marginTop: 4 }}>
-                  ✓ Auto: Rp {matForm.total_cost} ÷ {matForm.qty_beli} {matForm.unit} = <strong>Rp {matForm.cost_per_unit}/{matForm.unit}</strong>
-                </p>
-              )}
-            </div>
-          </div>
-
           <div><label style={lbl}>Stok Min — alert kalau di bawah ini ({matForm.unit})</label><input className="field" type="number" placeholder="0" value={matForm.min_stock} onChange={e => setMatForm(f => ({ ...f, min_stock: e.target.value }))} /></div>
 
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
