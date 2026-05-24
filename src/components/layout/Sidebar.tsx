@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X, ShoppingCart, LogOut } from 'lucide-react'
+import { LayoutDashboard, FlaskConical, Boxes, Calculator, TrendingUp, Sparkles, Menu, X, ShoppingCart, LogOut, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 const nav = [
@@ -13,6 +13,7 @@ const nav = [
   { href: '/rad', label: 'RAD & HPP', icon: Calculator },
   { href: '/cashflow', label: 'Cashflow', icon: TrendingUp },
   { href: '/pricing', label: 'Kalkulator Harga', icon: ShoppingCart },
+  { href: '/ai-cfo', label: 'AI CFO', icon: MessageSquare },
 ]
 
 function Brand() {
