@@ -59,7 +59,7 @@ function EditableRow({ label, value, onSave, color }: { label: string; value: nu
 
 export default function DashboardPage() {
   const { toast } = useToast()
-  const [stats, setStats] = useState({ totalSaldo: 0, totalIncome: 0, totalExpense: 0, criticalStock: 0 })
+  const [metrics, setMetrics] = useState<Record<string, number>>({})
   const [salesChart, setSalesChart] = useState<any[]>([])
   const [cfChart, setCfChart] = useState<any[]>([])
   const [criticalMaterials, setCriticalMaterials] = useState<any[]>([])
@@ -67,11 +67,7 @@ export default function DashboardPage() {
   const [sellingPrice, setSellingPrice] = useState(75000)
   const [hpp, setHpp] = useState(36000)
   const [totalSold, setTotalSold] = useState(0)
-  const [gaji, setGaji] = useState(0)
-  const [marketing, setMarketing] = useState(0)
-  const [operasional, setOperasional] = useState(0)
   const [modalBisnis, setModalBisnis] = useState(0)
-  const [kasAllTime, setKasAllTime] = useState(0)
   const [showModalBisnisModal, setShowModalBisnisModal] = useState(false)
   const [showSimulasi, setShowSimulasi] = useState(false)
   const [modalInput, setModalInput] = useState('')
@@ -79,7 +75,6 @@ export default function DashboardPage() {
   const [catatCashflow, setCatatCashflow] = useState(true)
   const [savingModal, setSavingModal] = useState(false)
   const [modalMode, setModalMode] = useState<'set' | 'tambah'>('set')
-  const [totalSoldBulanIni, setTotalSoldBulanIni] = useState(0)
   const [totalPiutang, setTotalPiutang] = useState(0)
   const [resellerSummaries, setResellerSummaries] = useState<{ name: string; sisa: number }[]>([])
 
@@ -115,7 +110,7 @@ export default function DashboardPage() {
       if (from) cfQuery = cfQuery.gte('transaction_date', from)
       if (to) cfQuery = cfQuery.lte('transaction_date', to + 'T23:59:59')
 
-      const [cf, allCf, sales, mats, settings, salesBulanIni, distRes, paymentsRes] = await Promise.all([
+      const [cf, allCf, sales, mats, settings, salesBulanIni, distRes, paymentsRes, metricsRes] = await Promise.all([
         cfQuery,
         supabase.from('cashflow').select('type, amount, category'),
         supabase.from('sales').select('*, variant:variants(name)').limit(200),
@@ -124,6 +119,7 @@ export default function DashboardPage() {
         supabase.from('sales').select('quantity').gte('sold_at', bulanFrom),
         supabase.from('distributions').select('reseller_id, quantity, price_per_unit, reseller:resellers(name)'),
         supabase.from('reseller_payments').select('reseller_id, amount'),
+        supabase.from('metrics').select('key, value'),
       ])
       const cashflows = cf.data || []
       const allCashflows = allCf.data || []
@@ -135,25 +131,17 @@ export default function DashboardPage() {
       const hp  = sett.find((s: any) => s.key === 'hpp_per_unit')
       const mb  = sett.find((s: any) => s.key === 'modal_bisnis')
       if (sp) setSellingPrice(parseFloat(sp.value))
-      if (hp) setHpp(parseFloat(hp.value))
+      if (hp) setHpp(parseFloat(sp.value))
       if (mb) setModalBisnis(parseFloat(mb.value))
 
-      // Stats cards menggunakan cashflow terfilter
-      const income = cashflows.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
-      const expense = cashflows.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
-      setStats({ totalSaldo: income - expense, totalIncome: income, totalExpense: expense, criticalStock: materials.filter(m => m.stock <= m.min_stock).length })
+      // Parse metrics from database
+      const m: Record<string, number> = {}
+      ;(metricsRes.data || []).forEach((row: any) => { m[row.key] = Number(row.value) || 0 })
+      setMetrics(m)
       setCriticalMaterials(materials.filter(m => m.stock <= m.min_stock))
 
-      // Kas ALL TIME untuk Modal Tracker / ROI
-      const allIncome = allCashflows.filter(c => c.type === 'income').reduce((s, c) => s + c.amount, 0)
-      const allExpense = allCashflows.filter(c => c.type === 'expense').reduce((s, c) => s + c.amount, 0)
-      setKasAllTime(allIncome - allExpense)
-
+      // Charts & other data still use raw queries
       setTotalSold(allSales.reduce((s: number, x: any) => s + x.quantity, 0))
-      setGaji(cashflows.filter(c => c.category === 'Gaji Karyawan').reduce((s, c) => s + c.amount, 0))
-      setMarketing(cashflows.filter(c => c.category === 'Marketing').reduce((s, c) => s + c.amount, 0))
-      setOperasional(cashflows.filter(c => c.category === 'Operasional').reduce((s, c) => s + c.amount, 0))
-      setTotalSoldBulanIni((salesBulanIni.data || []).reduce((s: number, x: any) => s + x.quantity, 0))
 
       // Hitung piutang reseller
       const distributions = distRes.data || []
@@ -223,22 +211,22 @@ export default function DashboardPage() {
     load()
   }
 
-  const kasSekarang = kasAllTime
-  const profitBersih = modalBisnis > 0 ? kasSekarang - modalBisnis : null
-  const roi = modalBisnis > 0 && profitBersih !== null ? (profitBersih / modalBisnis) * 100 : null
+  const kasSekarang = metrics['kas_all_time'] || 0
+  const profitBersih = metrics['profit_bersih'] || 0
+  const roi = metrics['roi'] || 0
 
-  const grossRev = sellingPrice * totalSold
-  const totalHpp = hpp * totalSold
+  const grossRev = sellingPrice * (metrics['total_sold'] || 0)
+  const totalHpp = hpp * (metrics['total_sold'] || 0)
   const grossProfit = grossRev - totalHpp
-  const netProfit = grossProfit - gaji - marketing - operasional
+  const netProfit = grossProfit - (metrics['gaji_bulan_ini'] || 0) - (metrics['marketing_bulan_ini'] || 0) - (metrics['operasional_bulan_ini'] || 0)
   const margin = sellingPrice > 0 ? (((sellingPrice - hpp) / sellingPrice) * 100).toFixed(1) : '0'
 
   const hppPct = sellingPrice > 0 ? (hpp / sellingPrice) * 100 : 0
 
   const marginPerBottle = sellingPrice - hpp
-  const biayaTetapBulanIni = gaji + marketing + operasional
+  const biayaTetapBulanIni = (metrics['gaji_bulan_ini'] || 0) + (metrics['marketing_bulan_ini'] || 0) + (metrics['operasional_bulan_ini'] || 0)
   const bepBotol = periode === 'bulan_ini' && marginPerBottle > 0 ? Math.ceil(biayaTetapBulanIni / marginPerBottle) : 0
-  const bepTercapai = totalSoldBulanIni >= bepBotol
+  const bepTercapai = (metrics['total_sold_bulan_ini'] || 0) >= bepBotol
 
   if (loading) return <Spinner />
 
@@ -266,20 +254,20 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Stats */}
+      {/* Stats - dari metrics table (all time) */}
       <div className="stats-grid">
-        <StatCard title="Saldo" value={formatRupiah(stats.totalSaldo)} icon={Wallet} color={stats.totalSaldo >= 0 ? 'indigo' : 'red'} />
-        <StatCard title="Total Pemasukan" value={formatRupiah(stats.totalIncome)} icon={TrendingUp} color="green" />
-        <StatCard title="Total Pengeluaran" value={formatRupiah(stats.totalExpense)} icon={ShoppingBag} color="amber" />
-        <StatCard title="Stok Kritis" value={`${stats.criticalStock} item`} icon={AlertTriangle} color={stats.criticalStock > 0 ? 'red' : 'green'} />
-        {profitBersih !== null && profitBersih > 0 && sellingPrice > 0 && hpp > 0 && (
-          <StatCard title="HPP (modal muter)" value={formatRupiah(Math.round(profitBersih * hppPct / 100))} subtitle="Dari profit bersih" icon={PiggyBank} color="amber" />
+        <StatCard title="Saldo" value={formatRupiah(metrics['kas_all_time'] || 0)} icon={Wallet} color={(metrics['kas_all_time'] || 0) >= 0 ? 'indigo' : 'red'} />
+        <StatCard title="Total Pemasukan" value={formatRupiah(metrics['total_income_all_time'] || 0)} icon={TrendingUp} color="green" />
+        <StatCard title="Total Pengeluaran" value={formatRupiah(metrics['total_expense_all_time'] || 0)} icon={ShoppingBag} color="amber" />
+        <StatCard title="Stok Kritis" value={`${metrics['critical_stock_count'] || 0} item`} icon={AlertTriangle} color={(metrics['critical_stock_count'] || 0) > 0 ? 'red' : 'green'} />
+        {(metrics['profit_bersih'] || 0) > 0 && (
+          <StatCard title="HPP (modal muter)" value={formatRupiah(Math.round(metrics['hpp_modal_muter'] || 0))} subtitle="Dari profit bersih" icon={PiggyBank} color="amber" />
         )}
-        {profitBersih !== null && profitBersih > 0 && sellingPrice > 0 && hpp > 0 && (
-          <StatCard title="Untung murni" value={formatRupiah(Math.round(profitBersih * (100 - hppPct) / 100))} subtitle="Dari profit bersih" icon={TrendingUp} color="green" />
+        {(metrics['profit_bersih'] || 0) > 0 && (
+          <StatCard title="Untung murni" value={formatRupiah(Math.round(metrics['untung_murni'] || 0))} subtitle="Dari profit bersih" icon={TrendingUp} color="green" />
         )}
-        {totalPiutang > 0 && (
-          <StatCard title="Piutang Reseller" value={formatRupiah(totalPiutang)} icon={Wallet} color="amber" />
+        {(metrics['total_piutang'] || 0) > 0 && (
+          <StatCard title="Piutang Reseller" value={formatRupiah(metrics['total_piutang'] || 0)} icon={Wallet} color="amber" />
         )}
       </div>
 
@@ -422,13 +410,13 @@ export default function DashboardPage() {
             </div>
             <div style={{ textAlign: 'center', background: '#F8FAFC', borderRadius: 8, padding: '10px 8px' }}>
               <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>Sudah Terjual</p>
-              <p style={{ fontSize: 18, fontWeight: 800, color: bepTercapai ? '#16A34A' : '#D97706' }}>{totalSoldBulanIni}</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: bepTercapai ? '#16A34A' : '#D97706' }}>{metrics['total_sold_bulan_ini'] || 0}</p>
               <p style={{ fontSize: 10, color: '#94A3B8' }}>botol</p>
             </div>
             <div style={{ textAlign: 'center', background: bepTercapai ? '#F0FDF4' : '#FEF3C7', borderRadius: 8, padding: '10px 8px' }}>
               <p style={{ fontSize: 11, color: '#94A3B8', marginBottom: 3 }}>{bepTercapai ? 'Lebih' : 'Kurang'}</p>
               <p style={{ fontSize: 18, fontWeight: 800, color: bepTercapai ? '#16A34A' : '#D97706' }}>
-                {bepTercapai ? `+${totalSoldBulanIni - bepBotol}` : bepBotol - totalSoldBulanIni}
+                {bepTercapai ? `+${(metrics['total_sold_bulan_ini'] || 0) - bepBotol}` : bepBotol - (metrics['total_sold_bulan_ini'] || 0)}
               </p>
               <p style={{ fontSize: 10, color: '#94A3B8' }}>botol</p>
             </div>
@@ -437,14 +425,14 @@ export default function DashboardPage() {
             <div style={{
               height: '100%', borderRadius: 99,
               background: bepTercapai ? '#16A34A' : '#D97706',
-              width: `${Math.min((totalSoldBulanIni / Math.max(bepBotol, 1)) * 100, 100)}%`,
+              width: `${Math.min(((metrics['total_sold_bulan_ini'] || 0) / Math.max(bepBotol, 1)) * 100, 100)}%`,
               transition: 'width .4s',
             }} />
           </div>
           <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>
             {bepTercapai
               ? `✅ BEP tercapai! Kamu sudah untung dari ops bulan ini.`
-              : `⚠️ Butuh ${bepBotol - totalSoldBulanIni} botol lagi untuk nutup biaya ops bulan ini.`}
+              : `⚠️ Butuh ${bepBotol - (metrics['total_sold_bulan_ini'] || 0)} botol lagi untuk nutup biaya ops bulan ini.`}
           </p>
         </div>
       )}
@@ -553,9 +541,9 @@ export default function DashboardPage() {
                 <span style={{ fontWeight: 600, color: '#334155' }}>Gross Profit</span>
                 <span style={{ fontWeight: 700, color: '#16A34A' }}>{formatRupiah(grossProfit)}</span>
               </div>
-              {gaji > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Gaji Karyawan</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(gaji)}</span></div>}
-              {marketing > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Marketing</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(marketing)}</span></div>}
-              {operasional > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Operasional</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(operasional)}</span></div>}
+              {(metrics['gaji_bulan_ini'] || 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Gaji Karyawan</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(metrics['gaji_bulan_ini'] || 0)}</span></div>}
+              {(metrics['marketing_bulan_ini'] || 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Marketing</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(metrics['marketing_bulan_ini'] || 0)}</span></div>}
+              {(metrics['operasional_bulan_ini'] || 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748B' }}>Operasional</span><span style={{ color: '#D97706', fontWeight: 600 }}>- {formatRupiah(metrics['operasional_bulan_ini'] || 0)}</span></div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #C7D2FE', paddingTop: 8, marginTop: 2 }}>
                 <span style={{ fontWeight: 700, color: '#0F172A', fontSize: 15 }}>NET PROFIT</span>
                 <span style={{ fontWeight: 800, fontSize: 18, color: netProfit >= 0 ? '#16A34A' : '#DC2626' }}>{formatRupiah(netProfit)}</span>
