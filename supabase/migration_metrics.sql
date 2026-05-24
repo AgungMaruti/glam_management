@@ -53,7 +53,7 @@ DECLARE
   v_gaji NUMERIC := 0;
   v_marketing NUMERIC := 0;
   v_ops NUMERIC := 0;
-  v_bulan_from TEXT;
+  v_bulan_from TIMESTAMPTZ;
   v_margin NUMERIC := 0;
   v_bep NUMERIC := 0;
   v_crit INT := 0;
@@ -64,7 +64,7 @@ BEGIN
   v_kas_all := v_income_all - v_expense_all;
 
   -- Bulan ini
-  v_bulan_from := date_trunc('month', now())::text;
+  v_bulan_from := date_trunc('month', now());
   SELECT COALESCE(SUM(amount), 0) INTO v_income_bulan FROM cashflow WHERE type = 'income' AND transaction_date >= v_bulan_from;
   SELECT COALESCE(SUM(amount), 0) INTO v_expense_bulan FROM cashflow WHERE type = 'expense' AND transaction_date >= v_bulan_from;
   v_kas_bulan := v_income_bulan - v_expense_bulan;
