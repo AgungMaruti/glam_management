@@ -8,8 +8,8 @@ export async function getProfit(month?: string, year?: string) {
   return res.json()
 }
 
-export async function getCashflow() {
-  const res = await fetch(`${BASE_URL}/api/analysis/cashflow`)
+export async function getCashflowReport() {
+  const res = await fetch(`${BASE_URL}/api/report/cashflow`)
   return res.json()
 }
 
@@ -18,23 +18,13 @@ export async function getInventory() {
   return res.json()
 }
 
-export async function getRatios() {
-  const res = await fetch(`${BASE_URL}/api/analysis/ratios`)
-  return res.json()
-}
-
-export async function getInsights() {
-  const res = await fetch(`${BASE_URL}/api/insights`)
-  return res.json()
-}
-
 export async function getForecast() {
-  const res = await fetch(`${BASE_URL}/api/forecast/revenue`)
+  const res = await fetch(`${BASE_URL}/api/forecast/advanced`)
   return res.json()
 }
 
 export async function getAnomalies() {
-  const res = await fetch(`${BASE_URL}/api/anomaly`)
+  const res = await fetch(`${BASE_URL}/api/anomaly/ml`)
   return res.json()
 }
 
