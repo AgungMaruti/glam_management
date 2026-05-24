@@ -7,6 +7,8 @@ interface Message {
   text: string
 }
 
+const STORAGE_KEY = 'glam-ai-cfo-history'
+
 export default function AICFOPage() {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -14,6 +16,14 @@ export default function AICFOPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try { setMessages(JSON.parse(saved)) } catch { }
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }, [messages])
 
@@ -35,12 +45,20 @@ export default function AICFOPage() {
   return (
     <div className="page-sections" style={{ padding: 0, gap: 0, minHeight: 'calc(100dvh - 64px)' }}>
       {/* Header */}
-      <div style={{ padding: '20px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 11, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
-        <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A' }}>AI CFO</h1>
-          <p style={{ fontSize: 13, color: '#94A3B8' }}>Tanya apapun tentang bisnis kamu</p>
+      <div style={{ padding: '20px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🤖</div>
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A' }}>AI CFO</h1>
+            <p style={{ fontSize: 13, color: '#94A3B8' }}>Tanya apapun tentang bisnis kamu</p>
+          </div>
         </div>
+        {messages.length > 0 && (
+          <button onClick={() => { setMessages([]); localStorage.removeItem(STORAGE_KEY); }}
+            style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 6 }}>
+            Hapus Chat
+          </button>
+        )}
       </div>
 
       {/* Messages */}
