@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# sensitive data
+/cashflow/
+supabase/import_*.sql
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
