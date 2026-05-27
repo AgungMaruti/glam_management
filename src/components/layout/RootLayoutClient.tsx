@@ -34,7 +34,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <main className="app-main">
         <div className="page-wrap">
-          {children}
+          <div className="page-content">
+            {children}
+          </div>
         </div>
       </main>
     </>

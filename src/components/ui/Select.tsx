@@ -26,6 +26,7 @@ export default function Select({ value, onChange, options, placeholder = '-- Pil
 
   const selected = options.find(o => o.value === value)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setOpen(false) }, [pathname])
 
   useEffect(() => {

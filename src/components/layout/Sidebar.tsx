@@ -101,7 +101,7 @@ function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => v
       </nav>
 
       {/* User & Footer */}
-      <div style={{ padding: '8px 16px 16px' }}>
+      <div className="sidebar-footer" style={{ padding: '8px 16px 16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ height: 1, background: '#F1F5F9', marginBottom: 12 }} />
         
         {/* User Info */}
@@ -156,6 +156,7 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setOpen(false) }, [pathname])
 
   const base: React.CSSProperties = {
@@ -178,8 +179,9 @@ export default function Sidebar() {
         background: '#fff',
         borderBottom: '1px solid #E2E8F0',
         position: 'fixed', top: 0, left: 0, right: 0, height: 56,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
         alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 16px', zIndex: 40,
+        padding: '0 16px 0 16px', zIndex: 40,
       }}>
         <Brand />
         <button

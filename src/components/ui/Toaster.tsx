@@ -40,8 +40,10 @@ export function Toaster({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
+  const ctxValue = React.useMemo(() => ({ toast, dismiss }), [toast, dismiss])
+
   return (
-    <ToastContext.Provider value={{ toast, dismiss }}>
+    <ToastContext.Provider value={ctxValue}>
       {children}
       <ToastPrimitive.Provider swipeDirection="right">
         {toasts.map(t => (

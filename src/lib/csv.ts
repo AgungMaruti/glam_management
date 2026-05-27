@@ -5,7 +5,7 @@
  * @param filename Filename without extension
  */
 export function exportCSV(
-  data: Record<string, any>[],
+  data: Record<string, unknown>[],
   columns: { key: string; label: string }[],
   filename: string
 ) {
