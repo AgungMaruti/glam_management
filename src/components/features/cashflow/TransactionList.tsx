@@ -9,7 +9,7 @@ import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
 import Select from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import type { Cashflow, InitialBalance } from '@/types'
+import type { Cashflow } from '@/types'
 
 interface TransactionListProps {
   data: Cashflow[]
@@ -19,12 +19,10 @@ interface TransactionListProps {
   limit: number
   loading: boolean
   saving: boolean
-  balance: InitialBalance | null
   onPeriodChange: (p: 'daily' | 'weekly' | 'monthly' | 'all') => void
   onPageChange: (p: number) => void
   onAdd: (p: { type: 'income' | 'expense'; category: string; amount: number; description?: string; date?: string }) => Promise<void>
   onRemove: (id: string) => Promise<void>
-  onSetBalance: (amount: number) => Promise<void>
 }
 
 const PERIODS = [
@@ -37,12 +35,10 @@ const INCOME_CATS = ['Penjualan', 'Reseller', 'Dropship', 'Lainnya']
 const EXPENSE_CATS = ['Produksi', 'Gaji Karyawan', 'Marketing', 'Packaging', 'Ongkir', 'Operasional', 'Lainnya']
 
 export function TransactionList(props: TransactionListProps) {
-  const { data, period, page, total, limit, loading, saving, balance } = props
+  const { data, period, page, total, limit, loading, saving } = props
   const [showAdd, setShowAdd] = useState(false)
-  const [showBalance, setShowBalance] = useState(false)
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ type: 'income' as 'income' | 'expense', category: '', amount: '', description: '', date: new Date().toISOString().slice(0, 10) })
-  const [balanceForm, setBalanceForm] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const parseInput = (v: string) => parseFloat(v.replace(/\./g, '')) || 0
@@ -102,17 +98,12 @@ export function TransactionList(props: TransactionListProps) {
   return (
     <div>
       <div className="card" style={{ marginBottom: 20, background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Wallet size={20} color="#4338CA" />
-            <div>
-              <p style={{ fontSize: 12, color: '#6366F1', margin: 0 }}>Saldo Rekening</p>
-              <p style={{ fontSize: 22, fontWeight: 800, color: '#4338CA', margin: 0 }}>{formatRupiah((balance?.amount || 0) + allTimeNet)}</p>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Wallet size={20} color="#4338CA" />
+          <div>
+            <p style={{ fontSize: 12, color: '#6366F1', margin: 0 }}>Saldo Rekening</p>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#4338CA', margin: 0 }}>{formatRupiah(allTimeNet)}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { setBalanceForm(String(balance?.amount || '')); setShowBalance(true) }}>
-            {balance ? 'Edit Saldo Awal' : 'Set Saldo Awal'}
-          </Button>
         </div>
       </div>
 
@@ -221,20 +212,6 @@ export function TransactionList(props: TransactionListProps) {
               setShowAdd(false)
             }}>Simpan</Button>
           </div>
-        </div>
-      </Modal>
-
-      <Modal open={showBalance} title="Set Saldo Awal" size="sm" onClose={() => setShowBalance(false)}>
-        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 12 }}>
-          Total uang yang ada di rekening/kas kamu sekarang (sebelum pakai aplikasi). Input sekali saja.
-        </p>
-        <NumInput value={balanceForm} onChange={setBalanceForm} placeholder="Saldo awal" />
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
-          <Button variant="ghost" onClick={() => setShowBalance(false)}>Batal</Button>
-          <Button variant="primary" loading={false} onClick={async () => {
-            await props.onSetBalance(parseFloat(balanceForm.replace(/\D/g, '')) || 0)
-            setShowBalance(false)
-          }}>Simpan</Button>
         </div>
       </Modal>
       <ConfirmModal

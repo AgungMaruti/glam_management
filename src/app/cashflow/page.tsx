@@ -1,13 +1,12 @@
 'use client'
 import { Wallet } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
-import { useCashflow, useSettings } from '@/lib/hooks'
+import { useCashflow } from '@/lib/hooks'
 import { TransactionList } from '@/components/features/cashflow/TransactionList'
 import { useAppStore } from '@/store'
 
 export default function CashflowPage() {
   const cashflow = useCashflow()
-  const { balance, setInitialBalance } = useSettings()
   const trigger = useAppStore(s => s.triggerDashboardRefresh)
 
   const handleAdd = async (p: Parameters<typeof cashflow.addTransaction>[0]) => {
@@ -26,12 +25,10 @@ export default function CashflowPage() {
         limit={cashflow.limit}
         loading={cashflow.loading}
         saving={cashflow.saving}
-        balance={balance}
         onPeriodChange={cashflow.setPeriod}
         onPageChange={cashflow.setPage}
         onAdd={handleAdd}
         onRemove={cashflow.remove}
-        onSetBalance={setInitialBalance}
       />
     </>
   )
