@@ -196,24 +196,25 @@ export default function Sidebar() {
       </div>
 
       {/* Backdrop */}
-      <div
-        onClick={() => setOpen(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 50,
-          opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.2s', backdropFilter: 'blur(4px)',
-        }}
-      />
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,.4)', zIndex: 50,
+            backdropFilter: 'blur(4px)',
+          }}
+        />
+      )}
 
       {/* Mobile drawer */}
-      <div style={{
-        ...base, position: 'fixed', top: 0, left: 0, width: 260, height: '100%', zIndex: 51,
-        transform: open ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
-        boxShadow: open ? '8px 0 32px rgba(15,23,42,.1)' : 'none',
-      }}>
-        <NavContent pathname={pathname} onClose={() => setOpen(false)} />
-      </div>
+      {open && (
+        <div style={{
+          ...base, position: 'fixed', top: 0, left: 0, width: 260, height: '100%', zIndex: 51,
+          boxShadow: '8px 0 32px rgba(15,23,42,.1)',
+        }}>
+          <NavContent pathname={pathname} onClose={() => setOpen(false)} />
+        </div>
+      )}
     </>
   )
 }
