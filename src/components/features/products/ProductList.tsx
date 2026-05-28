@@ -100,16 +100,26 @@ export function ProductList(props: ProductListProps) {
               </div>
             </div>
 
-            <div className="stats-grid" style={{ margin: 0 }}>
+            <div className="two-col-resp">
               {(p.variants || []).map(v => (
-                <div key={v.id} className="card" style={{ padding: 14, border: '1px solid #E2E8F0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h4 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>{v.name}</h4>
-                      <p style={{ fontSize: 12, color: '#94A3B8', margin: '2px 0' }}>{formatNumber(v.size_ml)} ml</p>
-                      <p style={{ fontSize: 15, fontWeight: 700, color: '#4338CA', margin: '4px 0 0' }}>{formatRupiah(v.selling_price)}</p>
+                <div key={v.id} className="card" style={{ padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, marginRight: 12 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{v.name}</span>
+                      <span style={{ fontSize: 12, color: '#94A3B8' }}>· {formatNumber(v.size_ml)} ml</span>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#4338CA', whiteSpace: 'nowrap', flexShrink: 0 }}>{formatRupiah(v.selling_price)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#64748B', flexWrap: 'wrap' }}>
+                      <span>Stok Sendiri <strong style={{ color: '#334155', fontSize: 13 }}>{v.stock_own}</strong></span>
+                      <span>Reseller <strong style={{ color: '#334155', fontSize: 13 }}>{v.stock_reseller}</strong></span>
+                      {v.total_sold !== undefined && (
+                        <span>Terjual <strong style={{ color: '#334155', fontSize: 13 }}>{v.total_sold}</strong></span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       <Button variant="soft" size="sm" onClick={() => { setSelProduct(p); setSelVariant(v); setVForm({ name: v.name, size_ml: String(v.size_ml), selling_price: String(v.selling_price), stock_own: String(v.stock_own) }); setMode('edit-variant') }}>
                         <Edit2 size={12} />
                       </Button>
@@ -118,29 +128,18 @@ export function ProductList(props: ProductListProps) {
                       }}>
                         <Trash2 size={12} />
                       </Button>
+                      <Button variant="primary" size="sm" icon={ShoppingBag} onClick={() => { setSelVariant(v); setSaleForm({ qty: '', harga: String(v.selling_price), catat: true }); setMode('sale') }}>
+                        Jual
+                      </Button>
+                      <Button variant="soft" size="sm" icon={Send} onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '', reseller_id: '', reseller_name: '' }); setResellerInput(''); setMode('distribute') }}
+                        style={{ background: '#EEF2FF', borderColor: '#C7D2FE', color: '#4338CA' }}>
+                        Dist
+                      </Button>
+                      <Button variant="soft" size="sm" icon={Wallet} onClick={() => { setSelVariant(v); setPayForm({ qty: '', harga: '', dist_id: '', catat: true }); setMode('payment') }}
+                        style={{ background: '#FFFBEB', borderColor: '#FDE68A', color: '#92400E' }}>
+                        Bayar
+                      </Button>
                     </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 12, color: '#64748B' }}>
-                    <div><span style={{ fontWeight: 600 }}>Stok Sendiri</span><br /><strong style={{ fontSize: 14, color: '#334155' }}>{v.stock_own}</strong></div>
-                    <div><span style={{ fontWeight: 600 }}>Stok Reseller</span><br /><strong style={{ fontSize: 14, color: '#334155' }}>{v.stock_reseller}</strong></div>
-                    {v.total_sold !== undefined && (
-                      <div><span style={{ fontWeight: 600 }}>Terjual</span><br /><strong style={{ fontSize: 14, color: '#334155' }}>{v.total_sold}</strong></div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <Button variant="primary" size="sm" icon={ShoppingBag} onClick={() => { setSelVariant(v); setSaleForm({ qty: '', harga: String(v.selling_price), catat: true }); setMode('sale') }}>
-                      Jual
-                    </Button>
-                    <Button variant="soft" size="sm" icon={Send} onClick={() => { setSelVariant(v); setDistForm({ qty: '', harga: '', reseller_id: '', reseller_name: '' }); setResellerInput(''); setMode('distribute') }}
-                      style={{ background: '#EEF2FF', borderColor: '#C7D2FE', color: '#4338CA' }}>
-                      Dist
-                    </Button>
-                    <Button variant="soft" size="sm" icon={Wallet} onClick={() => { setSelVariant(v); setPayForm({ qty: '', harga: '', dist_id: '', catat: true }); setMode('payment') }}
-                      style={{ background: '#FFFBEB', borderColor: '#FDE68A', color: '#92400E' }}>
-                      Bayar
-                    </Button>
                   </div>
                 </div>
               ))}
