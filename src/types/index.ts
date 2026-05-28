@@ -156,6 +156,8 @@ export interface Rad {
   selling_price: number
   salary_cost: number
   other_cost: number
+  hpp_bahan: number
+  hpp_full_cost: number
   created_at: string
   items?: RadItem[]
 }

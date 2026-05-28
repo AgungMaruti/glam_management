@@ -44,3 +44,4 @@ supabase/import_*.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+screenshoot/

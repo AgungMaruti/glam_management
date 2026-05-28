@@ -172,6 +172,8 @@ create table rad (
   selling_price  numeric not null default 0,
   salary_cost    numeric not null default 0,
   other_cost     numeric not null default 0,
+  hpp_bahan      numeric not null default 0,
+  hpp_full_cost  numeric not null default 0,
   created_at     timestamptz default now()
 );
 

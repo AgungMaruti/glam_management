@@ -17,6 +17,8 @@ export const radDb = {
     selling_price: number
     salary_cost: number
     other_cost: number
+    hpp_bahan: number
+    hpp_full_cost: number
     items: { name: string; total_qty: number; unit: string; total_cost: number; usage_per_bottle: number }[]
   }) {
     const { data: radData, error: radErr } = await supabase
@@ -27,6 +29,8 @@ export const radDb = {
         selling_price: params.selling_price,
         salary_cost: params.salary_cost,
         other_cost: params.other_cost,
+        hpp_bahan: params.hpp_bahan,
+        hpp_full_cost: params.hpp_full_cost,
       })
       .select()
       .single()
