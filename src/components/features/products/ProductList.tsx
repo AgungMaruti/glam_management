@@ -1,12 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Edit2, Search, Download, ShoppingBag, Send, Wallet } from 'lucide-react'
+import { Plus, Trash2, Edit2, Search, Download, ShoppingBag, Send, Wallet } from 'lucide-react'
 import { formatRupiah, formatNumber } from '@/lib/utils'
 import { exportCSV } from '@/lib/csv'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
-import { SwipeableRow } from '@/components/ui/SwipeableRow'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { Product, Variant, Reseller, Distribution } from '@/types'
 
 interface ProductListProps {
@@ -19,7 +19,7 @@ interface ProductListProps {
   onUpdateProduct: (id: string, p: { name: string; description?: string }) => Promise<void>
   onDeleteProduct: (id: string) => Promise<void>
   onCreateVariant: (p: { product_id: string; name: string; size_ml: number; selling_price: number; stock_own: number }) => Promise<void>
-  onUpdateVariant: (id: string, p: { name: string; size_ml: number; selling_price: number }) => Promise<void>
+  onUpdateVariant: (id: string, p: { name: string; size_ml: number; selling_price: number; stock_own: number }) => Promise<void>
   onDeleteVariant: (id: string) => Promise<void>
   onSale: (p: { variantId: string; quantity: number; unitPrice: number; recordCashflow: boolean }) => Promise<void>
   onDistribute: (p: { variantId: string; resellerId: string; quantity: number; pricePerUnit: number }) => Promise<void>
@@ -41,6 +41,8 @@ export function ProductList(props: ProductListProps) {
   const [distForm, setDistForm] = useState({ qty: '', harga: '', reseller_id: '', reseller_name: '' })
   const [resellerInput, setResellerInput] = useState('')
   const [payForm, setPayForm] = useState({ qty: '', harga: '', dist_id: '', catat: true })
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
+  const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
 
   const parseInput = (v: string) => parseFloat(v.replace(/\./g, '')) || 0
 
@@ -82,8 +84,7 @@ export function ProductList(props: ProductListProps) {
         <p className="empty">Belum ada produk.</p>
       ) : (
         filtered.map(p => (
-          <SwipeableRow key={p.id} onDelete={() => props.onDeleteProduct(p.id)}>
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div key={p.id} className="card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
                 <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>{p.name}</h3>
@@ -96,13 +97,13 @@ export function ProductList(props: ProductListProps) {
                 <Button variant="soft" size="sm" icon={Edit2} onClick={() => { setSelProduct(p); setPForm({ name: p.name, description: p.description || '' }); setMode('edit-product') }}>
                   Edit
                 </Button>
+                <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteProductId(p.id)} />
               </div>
             </div>
 
             <div className="two-col-resp">
               {(p.variants || []).map(v => (
-                <SwipeableRow key={v.id} onDelete={() => props.onDeleteVariant(v.id)}>
-                <div className="card" style={{ padding: '14px 16px' }}>
+                <div key={v.id} className="card" style={{ padding: '14px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, marginRight: 12 }}>
                       <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
@@ -123,6 +124,7 @@ export function ProductList(props: ProductListProps) {
                       <Button variant="soft" size="sm" onClick={() => { setSelProduct(p); setSelVariant(v); setVForm({ name: v.name, size_ml: String(v.size_ml), selling_price: String(v.selling_price), stock_own: String(v.stock_own) }); setMode('edit-variant') }}>
                         <Edit2 size={12} />
                       </Button>
+                      <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteVariantId(v.id)} />
                       <Button variant="primary" size="sm" icon={ShoppingBag} onClick={() => { setSelVariant(v); setSaleForm({ qty: '', harga: String(v.selling_price), catat: true }); setMode('sale') }}>
                         Jual
                       </Button>
@@ -137,11 +139,9 @@ export function ProductList(props: ProductListProps) {
                     </div>
                   </div>
                 </div>
-                </SwipeableRow>
               ))}
             </div>
           </div>
-          </SwipeableRow>
         ))
       )}
 
@@ -209,18 +209,24 @@ export function ProductList(props: ProductListProps) {
           </div>
           {mode === 'add-variant' && (
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600 }}>Stok Awal Sendiri</label>
+              <label style={{ fontSize: 13, fontWeight: 600 }}>Stok Sendiri</label>
+              <NumInput value={vForm.stock_own} onChange={v => setVForm({ ...vForm, stock_own: v })} />
+            </div>
+          )}
+          {mode === 'edit-variant' && (
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600 }}>Stok Sendiri</label>
               <NumInput value={vForm.stock_own} onChange={v => setVForm({ ...vForm, stock_own: v })} />
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
             <Button variant="ghost" onClick={() => setMode(null)}>Batal</Button>
             <Button variant="primary" loading={saving} onClick={async () => {
-              const data = { name: vForm.name, size_ml: parseInput(vForm.size_ml), selling_price: parseInput(vForm.selling_price) }
+              const data = { name: vForm.name, size_ml: parseInput(vForm.size_ml), selling_price: parseInput(vForm.selling_price), stock_own: parseInput(vForm.stock_own) }
               if (mode === 'edit-variant' && selVariant) {
                 await props.onUpdateVariant(selVariant.id, data)
               } else if (selProduct) {
-                await props.onCreateVariant({ ...data, product_id: selProduct.id, stock_own: parseInput(vForm.stock_own) })
+                await props.onCreateVariant({ ...data, product_id: selProduct.id })
               }
               setMode(null)
             }}>Simpan</Button>
@@ -358,6 +364,20 @@ export function ProductList(props: ProductListProps) {
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={!!deleteProductId}
+        title="Hapus Produk"
+        message={`Hapus produk dan semua variannya? Data tidak bisa dikembalikan.`}
+        onClose={() => setDeleteProductId(null)}
+        onConfirm={() => { if (deleteProductId) { props.onDeleteProduct(deleteProductId); setDeleteProductId(null) } }}
+      />
+      <ConfirmModal
+        open={!!deleteVariantId}
+        title="Hapus Varian"
+        message="Hapus varian ini? Data tidak bisa dikembalikan."
+        onClose={() => setDeleteVariantId(null)}
+        onConfirm={() => { if (deleteVariantId) { props.onDeleteVariant(deleteVariantId); setDeleteVariantId(null) } }}
+      />
     </div>
   )
 }

@@ -14,7 +14,7 @@ export const variantsDb = {
     return data
   },
 
-  async update(id: string, params: Partial<Pick<Variant, 'name' | 'size_ml' | 'selling_price'>>) {
+  async update(id: string, params: Partial<Pick<Variant, 'name' | 'size_ml' | 'selling_price' | 'stock_own'>>) {
     const { data, error } = await supabase
       .from('variants')
       .update({ ...params, updated_at: new Date().toISOString() })
