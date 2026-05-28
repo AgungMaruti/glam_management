@@ -93,7 +93,7 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
         onMouseDownCapture={e => { e.stopPropagation(); handleDown(e.clientX, e.clientY) }}
         onMouseMoveCapture={e => { e.stopPropagation(); handleMove(e.clientX, e.clientY) }}
         onMouseUpCapture={e => { e.stopPropagation(); handleUp() }}
-        onMouseLeaveCapture={e => { e.stopPropagation(); handleUp() }}
+        onMouseLeave={handleUp}
         style={{ position: 'relative', touchAction: 'pan-y' }}
       >
         {children}
