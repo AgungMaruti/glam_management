@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
 import Select from '@/components/ui/Select'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { Cashflow, InitialBalance } from '@/types'
 
 interface TransactionListProps {
@@ -42,6 +43,7 @@ export function TransactionList(props: TransactionListProps) {
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ type: 'income' as 'income' | 'expense', category: '', amount: '', description: '', date: new Date().toISOString().slice(0, 10) })
   const [balanceForm, setBalanceForm] = useState('')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const parseInput = (v: string) => parseFloat(v.replace(/\./g, '')) || 0
   const totalPages = Math.ceil(total / limit)
@@ -167,7 +169,7 @@ export function TransactionList(props: TransactionListProps) {
                 <span style={{ fontWeight: 700, fontSize: 14, color: t.type === 'income' ? '#10B981' : '#EF4444' }}>
                   {t.type === 'income' ? '+' : '-'}{formatRupiah(t.amount)}
                 </span>
-                <Button variant="ghost" size="sm" icon={Trash2} onClick={() => props.onRemove(t.id)} />
+                <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteId(t.id)} />
               </div>
             </div>
           ))}
@@ -235,6 +237,13 @@ export function TransactionList(props: TransactionListProps) {
           }}>Simpan</Button>
         </div>
       </Modal>
+      <ConfirmModal
+        open={!!deleteId}
+        title="Konfirmasi Hapus"
+        message="Transaksi yang dihapus tidak bisa dikembalikan. Lanjutkan?"
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) props.onRemove(deleteId); setDeleteId(null) }}
+      />
     </div>
   )
 }

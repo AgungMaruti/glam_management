@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import NumInput from '@/components/ui/NumInput'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { Recipe, RawMaterial, Variant } from '@/types'
 
 interface RecipeListProps {
@@ -20,6 +21,7 @@ interface RecipeListProps {
 export function RecipeList({ data, materials, loading, saving, onCreate, onRemove }: RecipeListProps) {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ variant_id: '', raw_material_id: '', quantity_needed: '' })
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const variantOptions = data.map(v => ({ value: v.id, label: `${v.product?.name || ''} - ${v.name}` }))
   const materialOptions = materials.map(m => ({ value: m.id, label: `${m.name} (${m.unit})` }))
@@ -60,7 +62,7 @@ export function RecipeList({ data, materials, loading, saving, onCreate, onRemov
                         <td>{r.raw_material?.name}</td>
                         <td>{formatNumber(r.quantity_needed)} {r.raw_material?.unit}</td>
                         <td>
-                          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => onRemove(r.id)} />
+                          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteId(r.id)} />
                         </td>
                       </tr>
                     ))}
@@ -96,6 +98,13 @@ export function RecipeList({ data, materials, loading, saving, onCreate, onRemov
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={!!deleteId}
+        title="Konfirmasi Hapus"
+        message="Bahan resep yang dihapus tidak bisa dikembalikan. Lanjutkan?"
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) onRemove(deleteId); setDeleteId(null) }}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface SwipeableRowProps {
   children: React.ReactNode
@@ -18,6 +19,7 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
   const dragX = useRef(0)
   const dragging = useRef(false)
   const open = useRef(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const snapTo = useCallback((target: number) => {
     if (!contentRef.current) return
@@ -27,10 +29,11 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
     open.current = target < -THRESHOLD
   }, [])
 
-  const close = useCallback(() => {
+  const handleDelete = useCallback(() => {
     open.current = false
     snapTo(0)
-  }, [snapTo])
+    onDelete()
+  }, [onDelete, snapTo])
 
   const handleDown = useCallback((cx: number, cy: number) => {
     startX.current = cx
@@ -69,7 +72,7 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
       <button
-        onClick={() => { onDelete(); close() }}
+        onClick={() => setShowConfirm(true)}
         style={{
           position: 'absolute', right: 0, top: 0, bottom: 0, width: DELETE_W,
           background: '#EF4444', color: '#fff', border: 'none', cursor: 'pointer',
@@ -95,6 +98,14 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
       >
         {children}
       </div>
+
+      <ConfirmModal
+        open={showConfirm}
+        title="Konfirmasi Hapus"
+        message="Data yang dihapus tidak bisa dikembalikan. Lanjutkan?"
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

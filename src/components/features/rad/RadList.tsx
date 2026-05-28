@@ -5,6 +5,7 @@ import { formatRupiah } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { Rad, RadItem } from '@/types'
 
 interface RadListProps {
@@ -45,6 +46,7 @@ function calcHpp(items: RadItem[]) {
 export function RadList({ data, loading, saving, onCreate, onRemove }: RadListProps) {
   const [showModal, setShowModal] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [batchQty, setBatchQty] = useState('')
   const [sellingPrice, setSellingPrice] = useState('')
@@ -109,7 +111,7 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <Button variant="ghost" size="sm" icon={Trash2} onClick={e => { e.stopPropagation(); onRemove(rad.id) }} />
+                  <Button variant="ghost" size="sm" icon={Trash2} onClick={e => { e.stopPropagation(); setDeleteId(rad.id) }} />
                   {expanded.has(rad.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
               </div>
@@ -392,6 +394,13 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={!!deleteId}
+        title="Konfirmasi Hapus"
+        message="RAD yang dihapus tidak bisa dikembalikan. Lanjutkan?"
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) onRemove(deleteId); setDeleteId(null) }}
+      />
     </div>
   )
 }
