@@ -1,11 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Trash2, Pencil, PackagePlus, Search, Download } from 'lucide-react'
+import { Plus, Pencil, PackagePlus, Search, Download } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
 import { exportCSV } from '@/lib/csv'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
+import { SwipeableRow } from '@/components/ui/SwipeableRow'
 import type { RawMaterial } from '@/types'
 
 interface MaterialListProps {
@@ -65,7 +66,8 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
           const pct = m.stock > 0 && m.min_stock > 0 ? Math.min(100, (m.stock / Math.max(m.stock, m.min_stock * 2)) * 100) : 50
           const isCritical = m.stock <= m.min_stock
           return (
-            <div key={m.id} className="card" style={{ position: 'relative', borderColor: isCritical ? '#FCA5A5' : undefined, background: isCritical ? '#FFF5F5' : undefined }}>
+            <SwipeableRow key={m.id} onDelete={() => onRemove(m.id)}>
+            <div className="card" style={{ position: 'relative', borderColor: isCritical ? '#FCA5A5' : undefined, background: isCritical ? '#FFF5F5' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{m.name}</h4>
@@ -91,9 +93,9 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
                 <Button variant="soft" size="sm" icon={Pencil} onClick={() => { setShowEdit(m); setForm({ name: m.name, unit: m.unit, stock: String(m.stock), min_stock: String(m.min_stock) }) }}>
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" icon={Trash2} onClick={async () => { if (confirm('Hapus bahan ini?')) await onRemove(m.id) }} />
               </div>
             </div>
+            </SwipeableRow>
           )
         })}
         {filtered.length === 0 && <p style={{ padding: 20, textAlign: 'center', color: '#94A3B8', gridColumn: '1 / -1' }}>Tidak ada bahan.</p>}

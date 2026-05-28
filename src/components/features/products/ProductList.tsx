@@ -1,11 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Trash2, Edit2, Search, Download, ShoppingBag, Send, Wallet } from 'lucide-react'
+import { Plus, Edit2, Search, Download, ShoppingBag, Send, Wallet } from 'lucide-react'
 import { formatRupiah, formatNumber } from '@/lib/utils'
 import { exportCSV } from '@/lib/csv'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
+import { SwipeableRow } from '@/components/ui/SwipeableRow'
 import type { Product, Variant, Reseller, Distribution } from '@/types'
 
 interface ProductListProps {
@@ -81,7 +82,8 @@ export function ProductList(props: ProductListProps) {
         <p className="empty">Belum ada produk.</p>
       ) : (
         filtered.map(p => (
-          <div key={p.id} className="card" style={{ marginBottom: 20 }}>
+          <SwipeableRow key={p.id} onDelete={() => props.onDeleteProduct(p.id)}>
+          <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
                 <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>{p.name}</h3>
@@ -94,15 +96,13 @@ export function ProductList(props: ProductListProps) {
                 <Button variant="soft" size="sm" icon={Edit2} onClick={() => { setSelProduct(p); setPForm({ name: p.name, description: p.description || '' }); setMode('edit-product') }}>
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" icon={Trash2} onClick={async () => {
-                  if (confirm(`Hapus produk "${p.name}" dan semua variannya?`)) await props.onDeleteProduct(p.id)
-                }} />
               </div>
             </div>
 
             <div className="two-col-resp">
               {(p.variants || []).map(v => (
-                <div key={v.id} className="card" style={{ padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                <SwipeableRow key={v.id} onDelete={() => props.onDeleteVariant(v.id)}>
+                <div className="card" style={{ padding: '14px 16px', border: '1px solid #E2E8F0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, marginRight: 12 }}>
                       <span style={{ fontWeight: 700, fontSize: 14 }}>{v.name}</span>
@@ -123,11 +123,6 @@ export function ProductList(props: ProductListProps) {
                       <Button variant="soft" size="sm" onClick={() => { setSelProduct(p); setSelVariant(v); setVForm({ name: v.name, size_ml: String(v.size_ml), selling_price: String(v.selling_price), stock_own: String(v.stock_own) }); setMode('edit-variant') }}>
                         <Edit2 size={12} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={async () => {
-                        if (confirm(`Hapus varian "${v.name}"?`)) await props.onDeleteVariant(v.id)
-                      }}>
-                        <Trash2 size={12} />
-                      </Button>
                       <Button variant="primary" size="sm" icon={ShoppingBag} onClick={() => { setSelVariant(v); setSaleForm({ qty: '', harga: String(v.selling_price), catat: true }); setMode('sale') }}>
                         Jual
                       </Button>
@@ -142,9 +137,11 @@ export function ProductList(props: ProductListProps) {
                     </div>
                   </div>
                 </div>
+                </SwipeableRow>
               ))}
             </div>
           </div>
+          </SwipeableRow>
         ))
       )}
 
