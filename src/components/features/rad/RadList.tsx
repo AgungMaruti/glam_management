@@ -82,7 +82,7 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
           setItems(STARTER_ITEMS.map(i => ({ ...i })))
           setSelectedMargin('30')
           setShowModal(true)
-        }}>+ Buat RAD Baru</Button>
+        }}>Buat RAD Baru</Button>
       </div>
 
       {data.length === 0 ? (
