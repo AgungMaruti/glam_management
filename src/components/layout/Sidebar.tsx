@@ -93,7 +93,7 @@ function NavContent({ pathname, onClose }: { pathname: string; onClose?: () => v
                 }}>
                   <Icon size={15} strokeWidth={active ? 2.2 : 1.9} />
                 </div>
-                <span style={{ fontSize: 13, fontWeight: active ? 600 : 500 }}>{item.label}</span>
+                <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
               </div>
             </Link>
           )
@@ -209,7 +209,7 @@ export default function Sidebar() {
       {/* Mobile drawer */}
       {open && (
         <div style={{
-          ...base, position: 'fixed', top: 0, left: 0, width: 260, height: '100%', zIndex: 51,
+          ...base, position: 'fixed', top: 0, left: 0, width: 260, height: '100%', zIndex: 51, overflowY: 'auto',
           boxShadow: '8px 0 32px rgba(15,23,42,.1)',
         }}>
           <NavContent pathname={pathname} onClose={() => setOpen(false)} />

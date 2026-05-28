@@ -102,10 +102,10 @@ export function ProductList(props: ProductListProps) {
             <div className="two-col-resp">
               {(p.variants || []).map(v => (
                 <SwipeableRow key={v.id} onDelete={() => props.onDeleteVariant(v.id)}>
-                <div className="card" style={{ padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                <div className="card" style={{ padding: '14px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, marginRight: 12 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{v.name}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                       <span style={{ fontSize: 12, color: '#94A3B8' }}>· {formatNumber(v.size_ml)} ml</span>
                     </div>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#4338CA', whiteSpace: 'nowrap', flexShrink: 0 }}>{formatRupiah(v.selling_price)}</span>

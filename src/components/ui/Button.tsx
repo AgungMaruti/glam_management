@@ -44,8 +44,9 @@ export default function Button({
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         gap: s.gap, padding: s.padding, fontSize: s.fontSize, fontWeight: 600,
-        borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit',
-        transition: 'all .12s', whiteSpace: 'nowrap',
+        borderRadius: 9,         cursor: (disabled || loading) ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+        transition: 'background .12s, color .12s, transform .12s, box-shadow .12s, opacity .12s', whiteSpace: 'nowrap',
+        touchAction: 'manipulation', userSelect: 'none',
         opacity: (disabled || loading) ? 0.5 : 1,
         ...v, ...style,
       }}

@@ -105,7 +105,7 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                 onClick={() => { const s = new Set(expanded); if (s.has(rad.id)) { s.delete(rad.id) } else { s.add(rad.id) }; setExpanded(s) }}>
                 <div>
-                  <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{rad.title}</h4>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 'calc(100% - 60px)' }}>{rad.title}</h4>
                   <p style={{ fontSize: 12, color: '#94A3B8', margin: '4px 0 0' }}>
                     Batch {rad.batch_quantity} pcs &middot; Full Cost/produk {formatRupiah(displayFull)} &middot; {new Date(rad.created_at).toLocaleDateString('id-ID')}
                   </p>
@@ -118,7 +118,7 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
                {expanded.has(rad.id) && (
                  <div style={{ marginTop: 16, padding: 16, background: '#F8FAFC', borderRadius: 8 }}>
                    <h5 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Detail Biaya per Produk</h5>
-                   <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                    <div className="table-resp"><table style={{ minWidth: 'auto', fontSize: 12, borderCollapse: 'collapse' }}>
                      <thead>
                        <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
                          <th style={{ textAlign: 'left', padding: 6 }}>Item</th>
@@ -135,7 +135,7 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
                          </tr>
                        ))}
                      </tbody>
-                   </table>
+                    </table></div>
 
                    {/* Overhead Section */}
                    {overheadTotal > 0 && (

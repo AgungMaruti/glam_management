@@ -65,12 +65,12 @@ export default function DashboardPage() {
       />
       <DashboardCharts productSales={productSales} cashflowTrend={cashflowTrend} />
       {criticalMaterials.length > 0 && (
-        <div className="card" style={{ marginTop: 16, border: '2px solid #FCA5A5', background: '#FFF5F5' }}>
+        <div className="card" style={{ marginTop: 16, border: '2px solid #FCA5A5', background: '#FFF5F5', maxHeight: 240, overflowY: 'auto' }}>
           <h4 style={{ fontSize: 15, fontWeight: 700, color: '#DC2626', marginBottom: 8 }}>Stok Bahan Kritis</h4>
           {criticalMaterials.map(m => (
             <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #FEE2E2', fontSize: 13 }}>
-              <span>{m.name}</span>
-              <span style={{ fontWeight: 700, color: '#DC2626' }}>Stok: {m.stock} {m.unit} (min: {m.min_stock})</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>{m.name}</span>
+              <span style={{ fontWeight: 700, color: '#DC2626', whiteSpace: 'nowrap', flexShrink: 0 }}>Stok: {m.stock} {m.unit}</span>
             </div>
           ))}
         </div>

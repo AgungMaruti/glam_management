@@ -15,8 +15,17 @@ const maxWidths = { sm: 400, md: 520, lg: 720 }
 
 export default function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    const prevOverflow = document.body.style.overflow
+    const prevPadding = document.body.style.paddingRight
+    if (open) {
+      const scrollbarW = window.innerWidth - document.documentElement.clientWidth
+      document.body.style.overflow = 'hidden'
+      document.body.style.paddingRight = `${scrollbarW}px`
+    }
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.paddingRight = prevPadding
+    }
   }, [open])
 
   if (!open) return null

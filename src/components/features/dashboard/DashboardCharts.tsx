@@ -23,7 +23,11 @@ const Tip = ({ active, payload, label }: any) => {
 }
 
 export function DashboardCharts({ productSales, cashflowTrend }: DashboardChartsProps) {
-  if (!productSales.length && !cashflowTrend.length) return null
+  if (!productSales.length && !cashflowTrend.length) return (
+    <div className="card" style={{ marginTop: 16, padding: '40px 24px', textAlign: 'center' }}>
+      <p style={{ fontSize: 14, color: '#94A3B8' }}>Belum ada data penjualan atau cashflow untuk ditampilkan.</p>
+    </div>
+  )
 
   return (
     <div className="card" style={{ marginTop: 16 }}>

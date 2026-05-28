@@ -9,13 +9,14 @@ interface SwipeableRowProps {
 }
 
 const DELETE_W = 72
-const THRESHOLD = DELETE_W * 0.45
-const TAP_THRESHOLD = 10
+const THRESHOLD = DELETE_W * 0.38
+const VELOCITY_THRESHOLD = 0.3
 
 export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const startX = useRef(0)
   const startY = useRef(0)
+  const startTime = useRef(0)
   const dragX = useRef(0)
   const dragging = useRef(false)
   const open = useRef(false)
@@ -23,10 +24,10 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
 
   const snapTo = useCallback((target: number) => {
     if (!contentRef.current) return
-    contentRef.current.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)'
-    contentRef.current.style.transform = `translateX(${target}px)`
-    dragX.current = target
     open.current = target < -THRESHOLD
+    dragX.current = target
+    contentRef.current.style.transition = 'transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1)'
+    contentRef.current.style.transform = `translateX(${target}px)`
   }, [])
 
   const handleDelete = useCallback(() => {
@@ -38,6 +39,7 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
   const handleDown = useCallback((cx: number, cy: number) => {
     startX.current = cx
     startY.current = cy
+    startTime.current = Date.now()
     dragX.current = open.current ? -DELETE_W : 0
     dragging.current = false
     if (contentRef.current) {
@@ -52,20 +54,37 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
     const dy = cy - startY.current
 
     if (!dragging.current) {
-      if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) return
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
       if (Math.abs(dx) < Math.abs(dy)) return
       dragging.current = true
     }
 
     const base = open.current ? -DELETE_W : 0
-    dragX.current = Math.max(-DELETE_W, Math.min(4, base + dx))
+    dragX.current = Math.max(-DELETE_W - 12, Math.min(6, base + dx))
     contentRef.current.style.transform = `translateX(${dragX.current}px)`
   }, [])
 
   const handleUp = useCallback(() => {
-    if (dragging.current) {
-      snapTo(dragX.current < -THRESHOLD ? -DELETE_W : 0)
-      dragging.current = false
+    if (!dragging.current) return
+    dragging.current = false
+
+    const elapsed = (Date.now() - startTime.current) / 1000
+    const velocity = open.current
+      ? (dragX.current + DELETE_W) / Math.max(elapsed, 0.01)
+      : Math.abs(dragX.current) / Math.max(elapsed, 0.01)
+
+    if (open.current) {
+      if (dragX.current > -THRESHOLD || velocity > VELOCITY_THRESHOLD * 2) {
+        snapTo(0)
+      } else {
+        snapTo(-DELETE_W)
+      }
+    } else {
+      if (dragX.current < -THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+        snapTo(-DELETE_W)
+      } else {
+        snapTo(0)
+      }
     }
   }, [snapTo])
 
@@ -87,14 +106,14 @@ export function SwipeableRow({ children, onDelete }: SwipeableRowProps) {
 
       <div
         ref={contentRef}
-        onTouchStartCapture={e => { e.stopPropagation(); handleDown(e.touches[0].clientX, e.touches[0].clientY) }}
-        onTouchMoveCapture={e => { e.stopPropagation(); handleMove(e.touches[0].clientX, e.touches[0].clientY) }}
-        onTouchEndCapture={e => { e.stopPropagation(); handleUp() }}
-        onMouseDownCapture={e => { e.stopPropagation(); handleDown(e.clientX, e.clientY) }}
-        onMouseMoveCapture={e => { e.stopPropagation(); handleMove(e.clientX, e.clientY) }}
-        onMouseUpCapture={e => { e.stopPropagation(); handleUp() }}
+        onTouchStart={e => { e.stopPropagation(); handleDown(e.touches[0].clientX, e.touches[0].clientY) }}
+        onTouchMove={e => { e.stopPropagation(); handleMove(e.touches[0].clientX, e.touches[0].clientY); if (dragging.current) e.preventDefault() }}
+        onTouchEnd={e => { e.stopPropagation(); handleUp() }}
+        onMouseDown={e => { e.stopPropagation(); handleDown(e.clientX, e.clientY) }}
+        onMouseMove={e => { e.stopPropagation(); if (dragging.current) handleMove(e.clientX, e.clientY) }}
+        onMouseUp={e => { e.stopPropagation(); handleUp() }}
         onMouseLeave={handleUp}
-        style={{ position: 'relative', touchAction: 'pan-y' }}
+        style={{ position: 'relative', touchAction: 'pan-y', willChange: 'transform' }}
       >
         {children}
       </div>

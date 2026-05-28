@@ -70,7 +70,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
             <div className="card" style={{ position: 'relative', borderColor: isCritical ? '#FCA5A5' : undefined, background: isCritical ? '#FFF5F5' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{m.name}</h4>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</h4>
                   <p style={{ fontSize: 12, color: '#94A3B8', margin: '4px 0 0' }}>{m.unit} &middot; Rp{formatNumber(m.cost_per_unit)}/{m.unit}</p>
                 </div>
                 {isCritical && <p style={{ fontSize: 11, color: '#DC2626', fontWeight: 700, margin: 0 }}>KRITIS</p>}

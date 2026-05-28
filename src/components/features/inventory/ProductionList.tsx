@@ -112,7 +112,7 @@ export function ProductionList({ productions, page, total, limit, loading, savin
           {preview.length > 0 && (
             <div className="card" style={{ background: '#F8FAFC' }}>
               <h5 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Preview Kebutuhan</h5>
-              <table style={{ width: '100%', fontSize: 13 }}>
+              <div className="table-resp"><table style={{ minWidth: 'auto', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
                     <th style={{ textAlign: 'left', padding: 6, fontWeight: 600 }}>Bahan</th>
@@ -133,7 +133,7 @@ export function ProductionList({ productions, page, total, limit, loading, savin
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
