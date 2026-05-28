@@ -16,7 +16,6 @@ drop table if exists recipes cascade;
 drop table if exists variants cascade;
 drop table if exists products cascade;
 drop table if exists cashflow cascade;
-drop table if exists initial_balance cascade;
 drop table if exists settings cascade;
 drop table if exists raw_materials cascade;
 drop table if exists metrics cascade;
@@ -145,13 +144,6 @@ create table stock_movements (
 );
 
 -- ─── 3. KONFIGURASI ────────────────────────────────────────
-
-create table initial_balance (
-  id      uuid default gen_random_uuid() primary key,
-  user_id uuid default auth.uid() references auth.users(id) on delete cascade not null unique,
-  amount  numeric not null default 0,
-  set_at  timestamptz default now()
-);
 
 create table settings (
   id         uuid default gen_random_uuid() primary key,
@@ -577,9 +569,6 @@ create policy "user_isolation" on reseller_payments for all to authenticated usi
 
 alter table cashflow enable row level security;
 create policy "user_isolation" on cashflow for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-
-alter table initial_balance enable row level security;
-create policy "user_isolation" on initial_balance for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 alter table settings enable row level security;
 create policy "user_isolation" on settings for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
