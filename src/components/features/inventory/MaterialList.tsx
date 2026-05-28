@@ -1,12 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Pencil, PackagePlus, Search, Download } from 'lucide-react'
+import { Plus, Trash2, Pencil, PackagePlus, Search, Download } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
 import { exportCSV } from '@/lib/csv'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import NumInput from '@/components/ui/NumInput'
-import { SwipeableRow } from '@/components/ui/SwipeableRow'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { RawMaterial } from '@/types'
 
 interface MaterialListProps {
@@ -28,6 +28,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
   const [showRestock, setShowRestock] = useState<RawMaterial | null>(null)
   const [form, setForm] = useState({ name: '', unit: 'ml', stock: '', min_stock: '' })
   const [restockForm, setRestockForm] = useState({ qty: '', total_cost: '', catat: true })
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const filtered = materials.filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -66,8 +67,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
           const pct = m.stock > 0 && m.min_stock > 0 ? Math.min(100, (m.stock / Math.max(m.stock, m.min_stock * 2)) * 100) : 50
           const isCritical = m.stock <= m.min_stock
           return (
-            <SwipeableRow key={m.id} onDelete={() => onRemove(m.id)}>
-            <div className="card" style={{ position: 'relative', borderColor: isCritical ? '#FCA5A5' : undefined, background: isCritical ? '#FFF5F5' : undefined }}>
+            <div key={m.id} className="card" style={{ position: 'relative', borderColor: isCritical ? '#FCA5A5' : undefined, background: isCritical ? '#FFF5F5' : undefined }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</h4>
@@ -93,9 +93,9 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
                 <Button variant="soft" size="sm" icon={Pencil} onClick={() => { setShowEdit(m); setForm({ name: m.name, unit: m.unit, stock: String(m.stock), min_stock: String(m.min_stock) }) }}>
                   Edit
                 </Button>
+                <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteId(m.id)} />
               </div>
             </div>
-            </SwipeableRow>
           )
         })}
         {filtered.length === 0 && <p style={{ padding: 20, textAlign: 'center', color: '#94A3B8', gridColumn: '1 / -1' }}>Tidak ada bahan.</p>}
@@ -201,6 +201,13 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        open={!!deleteId}
+        title="Hapus Bahan"
+        message="Hapus bahan ini? Data tidak bisa dikembalikan."
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) { onRemove(deleteId); setDeleteId(null) } }}
+      />
     </div>
   )
 }
