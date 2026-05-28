@@ -91,7 +91,13 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
         data.map(rad => {
           const hpp = calcHpp(rad.items || [])
           const displayFull = rad.hpp_full_cost > 0 ? rad.hpp_full_cost : hpp
-          const margin = rad.selling_price - displayFull
+          const displayBahan = rad.hpp_bahan > 0 ? rad.hpp_bahan : hpp
+          const overheadTotal = (rad.salary_cost || 0) + (rad.other_cost || 0)
+          const overheadPerUnit = rad.batch_quantity > 0 ? overheadTotal / rad.batch_quantity : 0
+          const marginBahan = rad.selling_price - displayBahan
+          const marginBahanPct = rad.selling_price > 0 ? (marginBahan / rad.selling_price) * 100 : 0
+          const marginFullCost = rad.selling_price - displayFull
+          const marginFullCostPct = displayFull > 0 ? (marginFullCost / displayFull) * 100 : 0
           return (
             <div key={rad.id} className="card" style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
@@ -107,45 +113,103 @@ export function RadList({ data, loading, saving, onCreate, onRemove }: RadListPr
                   {expanded.has(rad.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
               </div>
-              {expanded.has(rad.id) && (
-                <div style={{ marginTop: 16, padding: 16, background: '#F8FAFC', borderRadius: 8 }}>
-                  <h5 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Detail Biaya per Produk</h5>
-                  <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
-                        <th style={{ textAlign: 'left', padding: 6 }}>Item</th>
-                        <th style={{ textAlign: 'right', padding: 6 }}>Biaya/Produk</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(rad.items || []).map((item, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                          <td style={{ padding: 6 }}>{item.name}</td>
-                          <td style={{ textAlign: 'right', padding: 6 }}>
-                            {formatRupiah(item.total_qty > 0 ? (item.total_cost / item.total_qty) * item.usage_per_bottle : 0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="three-col" style={{ marginTop: 16 }}>
-                    <div>
-                      <span style={{ fontSize: 11, color: '#94A3B8' }}>HPP Bahan/Produk</span>
-                      <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0' }}>{formatRupiah(rad.hpp_bahan || hpp)}</p>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 11, color: '#94A3B8' }}>HPP Full Cost/Produk</span>
-                      <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0' }}>{formatRupiah(displayFull)}</p>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 11, color: '#94A3B8' }}>Margin/Produk</span>
-                      <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: margin > 0 ? '#10B981' : '#EF4444' }}>
-                        {formatRupiah(margin)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+               {expanded.has(rad.id) && (
+                 <div style={{ marginTop: 16, padding: 16, background: '#F8FAFC', borderRadius: 8 }}>
+                   <h5 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Detail Biaya per Produk</h5>
+                   <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                     <thead>
+                       <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                         <th style={{ textAlign: 'left', padding: 6 }}>Item</th>
+                         <th style={{ textAlign: 'right', padding: 6 }}>Biaya/Produk</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {(rad.items || []).map((item, i) => (
+                         <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                           <td style={{ padding: 6 }}>{item.name}</td>
+                           <td style={{ textAlign: 'right', padding: 6 }}>
+                             {formatRupiah(item.total_qty > 0 ? (item.total_cost / item.total_qty) * item.usage_per_bottle : 0)}
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+
+                   {/* Overhead Section */}
+                   {overheadTotal > 0 && (
+                     <div style={{ marginTop: 14, padding: 12, background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A' }}>
+                       <h6 style={{ fontSize: 12, fontWeight: 700, color: '#92400E', marginBottom: 8 }}>Detail Biaya Operasional</h6>
+                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12 }}>
+                         <div>
+                           <span style={{ color: '#64748B' }}>Gaji Karyawan</span>
+                           <p style={{ fontWeight: 700, margin: '2px 0 0' }}>{formatRupiah(rad.salary_cost || 0)}</p>
+                         </div>
+                         <div>
+                           <span style={{ color: '#64748B' }}>Biaya Lain</span>
+                           <p style={{ fontWeight: 700, margin: '2px 0 0' }}>{formatRupiah(rad.other_cost || 0)}</p>
+                         </div>
+                         <div>
+                           <span style={{ color: '#64748B' }}>Total Overhead</span>
+                           <p style={{ fontWeight: 700, margin: '2px 0 0', color: '#D97706' }}>{formatRupiah(overheadTotal)}</p>
+                         </div>
+                         <div>
+                           <span style={{ color: '#64748B' }}>Overhead/Produk</span>
+                           <p style={{ fontWeight: 700, margin: '2px 0 0', color: '#DC2626' }}>
+                             {formatRupiah(overheadPerUnit)}
+                           </p>
+                           <p style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>
+                             ({formatRupiah(overheadTotal)} ÷ {rad.batch_quantity} pcs)
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* 2-Row Summary Grid */}
+                   <div style={{ marginTop: 16 }}>
+                     {/* Row 1: HPP */}
+                     <div className="three-col" style={{ margin: 0, marginBottom: 10 }}>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>HPP Bahan/Produk</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: '#059669' }}>{formatRupiah(displayBahan)}</p>
+                       </div>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>Biaya Ops/Produk</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: '#D97706' }}>{formatRupiah(overheadPerUnit)}</p>
+                       </div>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>HPP Full Cost/Produk</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: '#DC2626' }}>{formatRupiah(displayFull)}</p>
+                       </div>
+                     </div>
+                     {/* Row 2: Margin + Harga Jual */}
+                     <div className="three-col" style={{ margin: 0 }}>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>Margin (HPP Bahan)</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: marginBahan > 0 ? '#10B981' : '#EF4444' }}>
+                           {formatRupiah(marginBahan)}
+                           <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginLeft: 4 }}>
+                             ({marginBahanPct.toFixed(0)}%)
+                           </span>
+                         </p>
+                       </div>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>Margin (Full Cost)</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: marginFullCost > 0 ? '#10B981' : '#EF4444' }}>
+                           {formatRupiah(marginFullCost)}
+                           <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B', marginLeft: 4 }}>
+                             ({marginFullCostPct.toFixed(0)}%)
+                           </span>
+                         </p>
+                       </div>
+                       <div>
+                         <span style={{ fontSize: 11, color: '#94A3B8' }}>Harga Jual</span>
+                         <p style={{ fontWeight: 700, fontSize: 15, margin: '4px 0 0', color: '#4338CA' }}>{formatRupiah(rad.selling_price)}</p>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               )}
             </div>
           )
         })
