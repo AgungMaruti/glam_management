@@ -89,7 +89,7 @@ export function ProductList(props: ProductListProps) {
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <Button variant="outline" size="sm" icon={Plus} onClick={() => { setSelProduct(p); setVForm({ name: '', size_ml: '', selling_price: '', stock_own: '' }); setMode('add-variant') }}>
-                  + Varian
+                  Varian
                 </Button>
                 <Button variant="soft" size="sm" icon={Edit2} onClick={() => { setSelProduct(p); setPForm({ name: p.name, description: p.description || '' }); setMode('edit-product') }}>
                   Edit
