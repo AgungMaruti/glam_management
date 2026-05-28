@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, Check } from 'lucide-react'
 
@@ -84,7 +85,7 @@ export default function Select({ value, onChange, options, placeholder = '-- Pil
         />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={dropRef}
           style={{
@@ -116,7 +117,8 @@ export default function Select({ value, onChange, options, placeholder = '-- Pil
               {opt.value === value && <Check size={14} color="#6366F1" strokeWidth={2.5} />}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
