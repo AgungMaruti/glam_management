@@ -1,12 +1,28 @@
 -- ═══════════════════════════════════════════════════════════
--- GLAM MANAGEMENT V2 — Safe Re-runnable Schema
--- This file runs on every deploy via scripts/apply-db.js
--- All CREATEs use IF NOT EXISTS — never drops data
+-- GLAM MANAGEMENT V2 — Clean Database Schema
+-- Copy & run this ENTIRE file in Supabase SQL Editor
 -- ═══════════════════════════════════════════════════════════
+
+-- ─── DROP ALL EXISTING TABLES ───────────────────────────────
+drop table if exists rad_items cascade;
+drop table if exists rad cascade;
+drop table if exists stock_movements cascade;
+drop table if exists reseller_payments cascade;
+drop table if exists distributions cascade;
+drop table if exists resellers cascade;
+drop table if exists sales cascade;
+drop table if exists productions cascade;
+drop table if exists recipes cascade;
+drop table if exists variants cascade;
+drop table if exists products cascade;
+drop table if exists cashflow cascade;
+drop table if exists settings cascade;
+drop table if exists raw_materials cascade;
+drop table if exists metrics cascade;
 
 -- ─── 1. MASTER DATA ────────────────────────────────────────
 
-create table if not exists raw_materials (
+create table raw_materials (
   id            uuid default gen_random_uuid() primary key,
   user_id       uuid default auth.uid() references auth.users(id) on delete cascade not null,
   name          text not null,
@@ -18,7 +34,7 @@ create table if not exists raw_materials (
   updated_at    timestamptz default now()
 );
 
-create table if not exists products (
+create table products (
   id          uuid default gen_random_uuid() primary key,
   user_id     uuid default auth.uid() references auth.users(id) on delete cascade not null,
   name        text not null,
@@ -28,7 +44,7 @@ create table if not exists products (
   updated_at  timestamptz default now()
 );
 
-create table if not exists variants (
+create table variants (
   id              uuid default gen_random_uuid() primary key,
   product_id      uuid references products(id) on delete cascade not null,
   user_id         uuid default auth.uid() references auth.users(id) on delete cascade not null,
@@ -41,7 +57,7 @@ create table if not exists variants (
   updated_at      timestamptz default now()
 );
 
-create table if not exists recipes (
+create table recipes (
   id               uuid default gen_random_uuid() primary key,
   variant_id       uuid references variants(id) on delete cascade not null,
   raw_material_id  uuid references raw_materials(id) on delete cascade not null,
@@ -51,7 +67,7 @@ create table if not exists recipes (
   updated_at       timestamptz default now()
 );
 
-create table if not exists resellers (
+create table resellers (
   id         uuid default gen_random_uuid() primary key,
   user_id    uuid default auth.uid() references auth.users(id) on delete cascade not null,
   name       text not null,
@@ -62,7 +78,7 @@ create table if not exists resellers (
 
 -- ─── 2. TRANSAKSI / OPERASIONAL ────────────────────────────
 
-create table if not exists productions (
+create table productions (
   id          uuid default gen_random_uuid() primary key,
   variant_id  uuid references variants(id) on delete cascade not null,
   user_id     uuid default auth.uid() references auth.users(id) on delete cascade not null,
@@ -72,7 +88,7 @@ create table if not exists productions (
   notes       text
 );
 
-create table if not exists sales (
+create table sales (
   id           uuid default gen_random_uuid() primary key,
   variant_id   uuid references variants(id) on delete cascade not null,
   user_id      uuid default auth.uid() references auth.users(id) on delete cascade not null,
@@ -83,7 +99,7 @@ create table if not exists sales (
   notes        text
 );
 
-create table if not exists distributions (
+create table distributions (
   id              uuid default gen_random_uuid() primary key,
   variant_id      uuid references variants(id) on delete cascade not null,
   reseller_id    uuid references resellers(id) on delete cascade not null,
@@ -94,7 +110,7 @@ create table if not exists distributions (
   distributed_at  timestamptz default now()
 );
 
-create table if not exists reseller_payments (
+create table reseller_payments (
   id              uuid default gen_random_uuid() primary key,
   distribution_id uuid references distributions(id) on delete cascade not null,
   user_id         uuid default auth.uid() references auth.users(id) on delete cascade not null,
@@ -103,7 +119,7 @@ create table if not exists reseller_payments (
   paid_at         timestamptz default now()
 );
 
-create table if not exists cashflow (
+create table cashflow (
   id               uuid default gen_random_uuid() primary key,
   user_id          uuid default auth.uid() references auth.users(id) on delete cascade not null,
   type             text not null check (type in ('income','expense')),
@@ -114,7 +130,7 @@ create table if not exists cashflow (
   created_at       timestamptz default now()
 );
 
-create table if not exists stock_movements (
+create table stock_movements (
   id              uuid default gen_random_uuid() primary key,
   user_id         uuid default auth.uid() references auth.users(id) on delete cascade not null,
   reference_type  text not null,
@@ -129,7 +145,7 @@ create table if not exists stock_movements (
 
 -- ─── 3. KONFIGURASI ────────────────────────────────────────
 
-create table if not exists settings (
+create table settings (
   id         uuid default gen_random_uuid() primary key,
   user_id    uuid default auth.uid() references auth.users(id) on delete cascade not null,
   key        text not null,
@@ -140,7 +156,7 @@ create table if not exists settings (
 
 -- ─── 4. PERENCANAAN (Calculator Only) ──────────────────────
 
-create table if not exists rad (
+create table rad (
   id             uuid default gen_random_uuid() primary key,
   user_id        uuid default auth.uid() references auth.users(id) on delete cascade not null,
   title          text not null,
@@ -153,7 +169,7 @@ create table if not exists rad (
   created_at     timestamptz default now()
 );
 
-create table if not exists rad_items (
+create table rad_items (
   id               uuid default gen_random_uuid() primary key,
   rad_id           uuid references rad(id) on delete cascade not null,
   user_id          uuid default auth.uid() references auth.users(id) on delete cascade not null,
