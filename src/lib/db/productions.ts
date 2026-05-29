@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 import type { Production, Variant } from '@/types'
 
 export const productionsDb = {
@@ -20,7 +20,7 @@ export const productionsDb = {
     notes?: string
   }) {
     const { error } = await supabase.rpc('fn_run_production', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_variant_id: params.variantId,
       p_quantity: params.quantity,
       p_notes: params.notes || null,

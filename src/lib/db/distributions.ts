@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 
 export const distributionsDb = {
   async distribute(params: {
@@ -8,7 +8,7 @@ export const distributionsDb = {
     pricePerUnit: number
   }): Promise<string> {
     const { data, error } = await supabase.rpc('fn_distribute_to_reseller', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_variant_id: params.variantId,
       p_reseller_id: params.resellerId,
       p_quantity: params.quantity,

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 import type { Reseller } from '@/types'
 
 export const resellersDb = {
@@ -32,7 +32,7 @@ export const resellersDb = {
     recordCashflow?: boolean
   }) {
     const { error } = await supabase.rpc('fn_reseller_payment', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_distribution_id: params.distributionId,
       p_quantity: params.quantity,
       p_amount: params.amount,

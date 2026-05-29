@@ -34,3 +34,9 @@ export const supabase = new Proxy({} as SupabaseClient, {
     return (client as unknown as Record<string, unknown>)[prop as string]
   },
 })
+
+export async function getUserId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  return user.id
+}

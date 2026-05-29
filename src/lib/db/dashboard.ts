@@ -9,10 +9,11 @@ export const dashboardDb = {
   },
 
   async getPiutang(): Promise<PiutangReseller[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('v_piutang_reseller')
       .select('*')
       .returns<PiutangReseller[]>()
+    if (error) return []
     return data || []
   },
 

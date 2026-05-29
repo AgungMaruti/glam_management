@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 
 export const salesDb = {
   async recordSale(params: {
@@ -8,7 +8,7 @@ export const salesDb = {
     recordCashflow?: boolean
   }) {
     const { error } = await supabase.rpc('fn_record_sale', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_variant_id: params.variantId,
       p_quantity: params.quantity,
       p_unit_price: params.unitPrice,

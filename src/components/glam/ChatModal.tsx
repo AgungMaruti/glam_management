@@ -15,7 +15,9 @@ export default function ChatModal() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    if (!expanded) return
+    const timer = setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    return () => clearTimeout(timer)
   }, [messages, expanded])
 
   async function handleAsk() {

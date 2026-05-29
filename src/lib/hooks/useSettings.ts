@@ -24,9 +24,11 @@ export function useSettings() {
   useEffect(() => { fetch() }, [fetch])
 
   const setSetting = async (key: string, value: string) => {
-    await settingsDb.set(key, value)
-    setSettings(prev => ({ ...prev, [key]: value }))
-    toastRef.current({ title: 'Pengaturan disimpan', variant: 'success' })
+    try {
+      await settingsDb.set(key, value)
+      setSettings(prev => ({ ...prev, [key]: value }))
+      toastRef.current({ title: 'Pengaturan disimpan', variant: 'success' })
+    } catch (e: unknown) { toastRef.current({ title: (e as Error).message, variant: 'error' }) }
   }
 
   return { settings, loading, setSetting, refetch: fetch }

@@ -49,15 +49,18 @@ export function TransactionList(props: TransactionListProps) {
 
   const [allTimeNet, setAllTimeNet] = useState(0)
   useEffect(() => {
+    let cancelled = false
     cashflowDb.getAll({ period: 'all', limit: 1000 }).then(r => {
+      if (cancelled) return
       const inc = r.data.filter(t => t.type === 'income').reduce((s: number, t: Cashflow) => s + t.amount, 0)
       const exp = r.data.filter(t => t.type === 'expense').reduce((s: number, t: Cashflow) => s + t.amount, 0)
       setAllTimeNet(inc - exp)
     }).catch(() => {})
+    return () => { cancelled = true }
   }, [data.length])
 
   const filtered = data.filter(t =>
-    t.description?.toLowerCase().includes(search.toLowerCase()) ||
+    (t.description || '').toLowerCase().includes(search.toLowerCase()) ||
     t.category.toLowerCase().includes(search.toLowerCase())
   )
 

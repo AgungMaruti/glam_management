@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 import type { RawMaterial } from '@/types'
 
 export const materialsDb = {
@@ -32,7 +32,7 @@ export const materialsDb = {
     recordCashflow?: boolean
   }) {
     const { error } = await supabase.rpc('fn_restock_material', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_material_id: params.materialId,
       p_qty: params.qty,
       p_total_cost: params.totalCost,

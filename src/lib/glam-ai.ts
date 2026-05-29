@@ -1,47 +1,46 @@
 const BASE_URL = 'https://GLfinance.marserver.my.id'
 
+async function $fetch(url: string, opts?: RequestInit) {
+  const res = await fetch(url, opts)
+  if (!res.ok) throw new Error(`API error ${res.status}`)
+  return res.json()
+}
+
 export async function getProfit(month?: string, year?: string) {
   const params = new URLSearchParams()
   if (month) params.append('month', month)
   if (year) params.append('year', year)
-  const res = await fetch(`${BASE_URL}/api/analysis/profit?${params}`)
-  return res.json()
+  return $fetch(`${BASE_URL}/api/analysis/profit?${params}`)
 }
 
 export async function getCashflowReport() {
-  const res = await fetch(`${BASE_URL}/api/report/cashflow`)
-  return res.json()
+  return $fetch(`${BASE_URL}/api/report/cashflow`)
 }
 
 export async function getInventory() {
-  const res = await fetch(`${BASE_URL}/api/inventory`)
-  return res.json()
+  return $fetch(`${BASE_URL}/api/inventory`)
 }
 
 export async function getForecast() {
-  const res = await fetch(`${BASE_URL}/api/forecast/advanced`)
-  return res.json()
+  return $fetch(`${BASE_URL}/api/forecast/advanced`)
 }
 
 export async function getAnomalies() {
-  const res = await fetch(`${BASE_URL}/api/anomaly/ml`)
-  return res.json()
+  return $fetch(`${BASE_URL}/api/anomaly/ml`)
 }
 
 export async function chat(query: string, sessionId = 'web') {
-  const res = await fetch(`${BASE_URL}/api/chat`, {
+  return $fetch(`${BASE_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, sessionId }),
   })
-  return res.json()
 }
 
 export async function inputData(query: string) {
-  const res = await fetch(`${BASE_URL}/api/chat`, {
+  return $fetch(`${BASE_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, autoInput: true }),
   })
-  return res.json()
 }

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserId } from '@/lib/supabase'
 import type { Cashflow } from '@/types'
 
 export const cashflowDb = {
@@ -37,7 +37,7 @@ export const cashflowDb = {
     date?: string
   }) {
     const { error } = await supabase.rpc('fn_add_cashflow', {
-      p_user_id: (await supabase.auth.getUser()).data.user?.id,
+      p_user_id: await getUserId(),
       p_type: params.type,
       p_category: params.category,
       p_amount: params.amount,
