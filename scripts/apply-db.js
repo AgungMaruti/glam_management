@@ -45,12 +45,21 @@ async function main() {
 
   const sql = fs.readFileSync(sqlPath, 'utf8')
   const statements = splitSql(sql)
-  const pool = new Pool({
-    connectionString: url,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 15000,
-  })
-  const client = await pool.connect()
+
+  let client
+  let pool
+  try {
+    pool = new Pool({
+      connectionString: url,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+    })
+    client = await pool.connect()
+  } catch (err) {
+    console.warn('[db] Cannot connect to database:', err?.code || err?.message?.substring(0, 120))
+    console.log('[db] Skipping migration — DB unreachable from build environment')
+    return
+  }
 
   let ok = 0
   let skipped = 0
@@ -66,7 +75,7 @@ async function main() {
         if (code === '42710' || code === '42P07' || msg.includes('already exists')) {
           // OK — idempotent
         } else if (code === '42P01' || msg.includes('does not exist')) {
-          // Likely a DROP or ALTER on missing object — safe to skip
+          // Safe to skip
         } else {
           console.log(`[db] skipped: ${msg}`)
         }
