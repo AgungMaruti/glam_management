@@ -8,7 +8,8 @@ import { useAppStore } from '@/store'
 import { StatsCards } from '@/components/features/dashboard/StatsCards'
 import { ProfitTracker } from '@/components/features/dashboard/ProfitTracker'
 import { DashboardCharts } from '@/components/features/dashboard/DashboardCharts'
-import type { DashboardMetrics, ProductSalesData, CashflowMonthlyData, RawMaterial } from '@/types'
+import { SalesInsight } from '@/components/features/dashboard/SalesInsight'
+import type { DashboardMetrics, SalesHppInsight, ProductSalesData, CashflowMonthlyData, RawMaterial } from '@/types'
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const [cashflowTrend, setCashflowTrend] = useState<CashflowMonthlyData[]>([])
   const [criticalMaterials, setCriticalMaterials] = useState<RawMaterial[]>([])
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const [insight, setInsight] = useState<SalesHppInsight | null>(null)
   const version = useAppStore(s => s.dashboardVersion)
 
   useEffect(() => {
@@ -42,6 +44,12 @@ export default function DashboardPage() {
     return () => { cancelled = true }
   }, [version])
 
+  useEffect(() => {
+    ;(async () => {
+      try { setInsight(await dashboardDb.getSalesHppInsight()) } catch { /* ok */ }
+    })()
+  }, [version])
+
   if (loading) {
     return (
       <>
@@ -64,6 +72,7 @@ export default function DashboardPage() {
         }}
       />
       <DashboardCharts productSales={productSales} cashflowTrend={cashflowTrend} />
+      <SalesInsight data={insight} />
       {criticalMaterials.length > 0 && (
         <div className="card" style={{ marginTop: 16, border: '2px solid #FCA5A5', background: '#FFF5F5', maxHeight: 240, overflowY: 'auto' }}>
           <h4 style={{ fontSize: 15, fontWeight: 700, color: '#DC2626', marginBottom: 8 }}>Stok Bahan Kritis</h4>

@@ -196,6 +196,21 @@ export interface DashboardMetrics {
   selling_price: number
 }
 
+export interface SalesHppInsight {
+  total_penjualan: number
+  unit_terjual: number
+  avg_hpp_bahan: number
+  avg_hpp_full: number
+  hpp_bahan_total: number
+  hpp_full_total: number
+  profit_bahan: number
+  profit_full: number
+  margin_bahan_pct: number
+  margin_full_pct: number
+  uang_diputar: number
+  rad_count: number
+}
+
 export interface PiutangReseller {
   reseller_id: string
   reseller_name: string

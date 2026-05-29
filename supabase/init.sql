@@ -676,3 +676,59 @@ begin
   order by m.month_start;
 end;
 $$ language plpgsql security definer;
+
+-- FN 9: Sales vs HPP Insight
+create or replace function get_sales_hpp_insight(p_days int default 30)
+returns json as $$
+declare
+  v_total_penjualan   numeric;
+  v_unit_terjual      integer;
+  v_avg_hpp_bahan     numeric;
+  v_avg_hpp_full      numeric;
+  v_hpp_bahan_total   numeric;
+  v_hpp_full_total    numeric;
+  v_profit_bahan      numeric;
+  v_profit_full       numeric;
+  v_margin_bahan_pct  numeric;
+  v_margin_full_pct   numeric;
+  v_uang_diputar      numeric;
+  v_rad_count         integer;
+begin
+  select coalesce(sum(total_amount), 0), coalesce(sum(quantity), 0)
+  into v_total_penjualan, v_unit_terjual
+  from sales
+  where user_id = auth.uid()
+    and sold_at >= now() - (p_days || ' days')::interval;
+
+  select coalesce(avg(hpp_bahan), 0), coalesce(avg(hpp_full_cost), 0), count(*)
+  into v_avg_hpp_bahan, v_avg_hpp_full, v_rad_count
+  from rad
+  where user_id = auth.uid();
+
+  v_hpp_bahan_total := v_avg_hpp_bahan * v_unit_terjual;
+  v_hpp_full_total  := v_avg_hpp_full  * v_unit_terjual;
+
+  v_profit_bahan := v_total_penjualan - v_hpp_bahan_total;
+  v_profit_full  := v_total_penjualan - v_hpp_full_total;
+
+  v_margin_bahan_pct := case when v_total_penjualan > 0 then (v_profit_bahan / v_total_penjualan) * 100 else 0 end;
+  v_margin_full_pct  := case when v_hpp_full_total  > 0 then (v_profit_full  / v_hpp_full_total)  * 100 else 0 end;
+
+  v_uang_diputar := greatest(v_profit_full, 0);
+
+  return json_build_object(
+    'total_penjualan',   v_total_penjualan,
+    'unit_terjual',      v_unit_terjual,
+    'avg_hpp_bahan',     v_avg_hpp_bahan,
+    'avg_hpp_full',      v_avg_hpp_full,
+    'hpp_bahan_total',   v_hpp_bahan_total,
+    'hpp_full_total',    v_hpp_full_total,
+    'profit_bahan',      v_profit_bahan,
+    'profit_full',       v_profit_full,
+    'margin_bahan_pct',  v_margin_bahan_pct,
+    'margin_full_pct',   v_margin_full_pct,
+    'uang_diputar',      v_uang_diputar,
+    'rad_count',         v_rad_count
+  );
+end;
+$$ language plpgsql security definer;

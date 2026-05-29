@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { DashboardMetrics, PiutangReseller, ProductSalesData, CashflowMonthlyData, RawMaterial } from '@/types'
+import type { DashboardMetrics, SalesHppInsight, PiutangReseller, ProductSalesData, CashflowMonthlyData, RawMaterial } from '@/types'
 
 export const dashboardDb = {
   async getMetrics(): Promise<DashboardMetrics | null> {
@@ -34,5 +34,11 @@ export const dashboardDb = {
       .select('*')
     if (error) return []
     return (data || []).filter(m => m.stock <= m.min_stock)
+  },
+
+  async getSalesHppInsight(days = 30): Promise<SalesHppInsight | null> {
+    const { data, error } = await supabase.rpc('get_sales_hpp_insight', { p_days: days })
+    if (error || !data) return null
+    return data as SalesHppInsight
   },
 }

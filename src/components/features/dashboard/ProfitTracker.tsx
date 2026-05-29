@@ -18,9 +18,14 @@ export function ProfitTracker({ metrics, settings, onSetModal }: ProfitTrackerPr
   const [showModal, setShowModal] = useState(false)
   const [modalDraft, setModalDraft] = useState('')
 
-  if (!metrics) return null
-
   const modal = Number(settings['modal_bisnis'] || '0')
+  const saldo = metrics?.saldo ?? 0
+  const profit = metrics?.profit_bersih ?? 0
+  const roi = metrics?.roi ?? 0
+  const gaji = metrics?.gaji_bulan ?? 0
+  const marketing = metrics?.marketing_bulan ?? 0
+  const operasional = metrics?.operasional_bulan ?? 0
+  const bep = metrics?.bep_botol ?? 0
 
   return (
     <div className="card">
@@ -38,21 +43,21 @@ export function ProfitTracker({ metrics, settings, onSetModal }: ProfitTrackerPr
       </div>
 
       <div className="three-col" style={{ margin: 0 }}>
-        <StatCard icon={PiggyBank} title="Total Modal Ditanam" value={formatRupiah(modal)} color="violet" />
-        <StatCard icon={Wallet} title="Kas Bisnis Saat Ini" value={formatRupiah(metrics.saldo)} color="indigo" />
+        <StatCard icon={PiggyBank} title="Total Modal Ditanam" value={modal > 0 ? formatRupiah(modal) : '—'} color="violet" />
+        <StatCard icon={Wallet} title="Kas Bisnis Saat Ini" value={metrics ? formatRupiah(saldo) : '—'} color="indigo" />
       </div>
       <div className="three-col" style={{ marginTop: 12 }}>
-        <StatCard icon={TrendingUp} title="Profit Bersih" value={formatRupiah(metrics.profit_bersih)} color={metrics.profit_bersih >= 0 ? 'green' : 'red'} />
-        <StatCard icon={Percent} title="ROI" value={`${metrics.roi.toFixed(1)}%`} color="violet" />
+        <StatCard icon={TrendingUp} title="Profit Bersih" value={metrics ? formatRupiah(profit) : '—'} color={profit >= 0 ? 'green' : 'red'} />
+        <StatCard icon={Percent} title="ROI" value={metrics ? `${roi.toFixed(1)}%` : '—'} color="violet" />
       </div>
 
-      {metrics.bep_botol > 0 && (
+      {bep > 0 && (
         <div className="card" style={{ marginTop: 16, border: '1px dashed #6366F1', background: '#EEF2FF' }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: '#4338CA' }}>
-            BEP Bulan Ini: <strong>{metrics.bep_botol} botol</strong>
+            BEP Bulan Ini: <strong>{bep} botol</strong>
           </p>
           <p style={{ fontSize: 12, color: '#6366F1', marginTop: 4 }}>
-            Untuk menutup biaya tetap (gaji + marketing + operasional) bulan ini: {formatRupiah(metrics.gaji_bulan + metrics.marketing_bulan + metrics.operasional_bulan)}
+            Untuk menutup biaya tetap (gaji + marketing + operasional) bulan ini: {formatRupiah(gaji + marketing + operasional)}
           </p>
         </div>
       )}
