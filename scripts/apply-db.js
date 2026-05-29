@@ -2,6 +2,34 @@ const { Pool } = require('pg')
 const fs = require('fs')
 const path = require('path')
 
+function splitSql(sql) {
+  const statements = []
+  let buf = ''
+  let inDollar = false
+  let i = 0
+
+  while (i < sql.length) {
+    if (sql[i] === '$' && sql[i + 1] === '$') {
+      inDollar = !inDollar
+      buf += '$$'
+      i += 2
+      continue
+    }
+    if (sql[i] === ';' && !inDollar) {
+      const s = buf.trim() + ';'
+      if (s.length > 1 && !s.startsWith('--')) statements.push(s)
+      buf = ''
+    } else {
+      buf += sql[i]
+    }
+    i++
+  }
+
+  const last = buf.trim()
+  if (last.length > 0 && !last.startsWith('--')) statements.push(last)
+  return statements
+}
+
 async function main() {
   const url = process.env.DATABASE_URL
   if (!url) {
@@ -16,26 +44,37 @@ async function main() {
   }
 
   const sql = fs.readFileSync(sqlPath, 'utf8')
+  const statements = splitSql(sql)
   const pool = new Pool({
     connectionString: url,
     ssl: { rejectUnauthorized: false },
     connectionTimeoutMillis: 15000,
   })
+  const client = await pool.connect()
 
+  let ok = 0
+  let skipped = 0
   try {
-    await pool.query(sql)
-    console.log('[db] Schema applied successfully')
-  } catch (err) {
-    const msg = err?.message || ''
-    if (msg.includes('already exists') || err?.code === '42710' || err?.code === '42P07') {
-      console.log('[db] Some objects already exist — continuing (idempotent)')
-    } else if (msg.includes('depends on') || msg.includes('cannot drop')) {
-      console.log('[db] Dependency constraint — continuing (safe)')
-    } else {
-      console.warn('[db] Migration warning:', msg.substring(0, 200))
-      // Never fail the build
+    for (const stmt of statements) {
+      try {
+        await client.query(stmt)
+        ok++
+      } catch (err) {
+        skipped++
+        const code = err?.code || ''
+        const msg = (err?.message || '').substring(0, 120)
+        if (code === '42710' || code === '42P07' || msg.includes('already exists')) {
+          // OK — idempotent
+        } else if (code === '42P01' || msg.includes('does not exist')) {
+          // Likely a DROP or ALTER on missing object — safe to skip
+        } else {
+          console.log(`[db] skipped: ${msg}`)
+        }
+      }
     }
+    console.log(`[db] ${ok} executed, ${skipped} skipped — ${statements.length} total`)
   } finally {
+    client.release()
     await pool.end()
   }
 }
