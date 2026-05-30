@@ -32,7 +32,7 @@ export function useCashflow() {
 
   const addTransaction = async (p: Parameters<typeof cashflowDb.addTransaction>[0]) => {
     setSaving(true)
-    try { await cashflowDb.addTransaction(p); setPage(1); toastRef.current({ title: 'Transaksi ditambahkan', variant: 'success' }) }
+    try { await cashflowDb.addTransaction(p); await fetch(); toastRef.current({ title: 'Transaksi ditambahkan', variant: 'success' }) }
     catch (e: unknown) { toastRef.current({ title: (e as Error).message, variant: 'error' }) }
     finally { setSaving(false) }
   }

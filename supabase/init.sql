@@ -201,7 +201,7 @@ begin
     values (p_user_id, 'expense', 'Produksi', p_total_cost, 'Restock bahan baku', now());
   end if;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 2: Jalankan produksi
 create or replace function fn_run_production(
@@ -253,7 +253,7 @@ begin
   insert into cashflow (user_id, type, category, amount, description, transaction_date)
   values (p_user_id, 'expense', 'Produksi', v_total_cost, 'Produksi ' || p_quantity || ' pcs', now());
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 3: Catat penjualan sendiri
 create or replace function fn_record_sale(
@@ -287,7 +287,7 @@ begin
     values (p_user_id, 'income', 'Penjualan', p_unit_price * p_quantity, 'Penjualan produk', now());
   end if;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 4: Distribusi ke reseller
 create or replace function fn_distribute_to_reseller(
@@ -323,7 +323,7 @@ begin
 
   return v_dist_id;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 5: Reseller bayar / lapor laku
 create or replace function fn_reseller_payment(
@@ -375,7 +375,7 @@ begin
     values (p_user_id, 'income', 'Penjualan Reseller', p_amount, 'Pembayaran reseller', now());
   end if;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 6: Tambah transaksi cashflow manual
 create or replace function fn_add_cashflow(
@@ -394,7 +394,7 @@ begin
   values (v_id, p_user_id, p_type, p_category, p_amount, p_description, p_date);
   return v_id;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- ─── 6. DATABASE VIEWS ────────────────────────────────────
 
@@ -614,7 +614,7 @@ begin
   ) into result;
   return result;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 create or replace function get_product_sales()
 returns table(variant_id uuid, variant_name text, product_name text, total_qty bigint, total_revenue numeric) as $$
@@ -633,7 +633,7 @@ begin
   group by v.id, v.name, p.name
   order by total_revenue desc;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 create or replace function get_cashflow_trend()
 returns table(month text, total_income numeric, total_expense numeric, net numeric) as $$
@@ -659,7 +659,7 @@ begin
   group by m.month_start
   order by m.month_start;
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
 
 -- FN 9: Sales vs HPP Insight
 create or replace function get_sales_hpp_insight(p_days int default 30)
@@ -715,4 +715,35 @@ begin
     'rad_count',         v_rad_count
   );
 end;
-$$ language plpgsql security definer;
+$ language plpgsql security definer set search_path = '';
+
+-- ─── 9. SECURITY CLEANUP ────────────────────────────────────
+
+drop function if exists exec_sql cascade;
+
+revoke execute on function fn_add_cashflow from anon, public;
+revoke execute on function fn_record_sale from anon, public;
+revoke execute on function fn_distribute_to_reseller from anon, public;
+revoke execute on function fn_reseller_payment from anon, public;
+revoke execute on function fn_restock_material from anon, public;
+revoke execute on function fn_run_production from anon, public;
+revoke execute on function get_dashboard_metrics from anon, public;
+revoke execute on function get_product_sales from anon, public;
+revoke execute on function get_cashflow_trend from anon, public;
+revoke execute on function get_sales_hpp_insight from anon, public;
+
+grant execute on function fn_add_cashflow to authenticated;
+grant execute on function fn_record_sale to authenticated;
+grant execute on function fn_distribute_to_reseller to authenticated;
+grant execute on function fn_reseller_payment to authenticated;
+grant execute on function fn_restock_material to authenticated;
+grant execute on function fn_run_production to authenticated;
+grant execute on function get_dashboard_metrics to authenticated;
+grant execute on function get_product_sales to authenticated;
+grant execute on function get_cashflow_trend to authenticated;
+grant execute on function get_sales_hpp_insight to authenticated;
+
+alter view v_dashboard_metrics  set (security_invoker = true);
+alter view v_piutang_reseller  set (security_invoker = true);
+alter view v_product_sales     set (security_invoker = true);
+alter view v_cashflow_monthly  set (security_invoker = true);
