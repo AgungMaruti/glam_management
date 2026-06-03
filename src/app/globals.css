@@ -109,7 +109,7 @@ h3 { font-size: 15px; font-weight: 700; color: #0F172A; }
 }
 
 /* ── FLEX HELPERS ───────────────── */
-.flex-row { display: flex; gap: 8px; align-items: center; }
+.flex-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
 /* ── FORM ───────────────────────── */
@@ -198,8 +198,9 @@ hr.divider { border: none; border-top: 1px solid var(--border); }
 @media (min-width: 1024px) { .three-col { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
 
 .mat-grid {
-  display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr);
+  display: grid; gap: 12px; grid-template-columns: 1fr;
 }
+@media (min-width: 480px)  { .mat-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 640px)  { .mat-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1024px) { .mat-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 1280px) { .mat-grid { grid-template-columns: repeat(5, 1fr); } }

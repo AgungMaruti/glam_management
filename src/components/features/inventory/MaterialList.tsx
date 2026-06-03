@@ -86,7 +86,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 6, marginTop: 12, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 6, marginTop: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 <Button variant="soft" size="sm" icon={PackagePlus} onClick={() => { setShowRestock(m); setRestockForm({ qty: '', total_cost: '', catat: true }) }}>
                   Restock
                 </Button>
@@ -111,7 +111,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
           </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600 }}>Satuan</label>
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
               {UNITS.map(u => (
                 <button key={u} onClick={() => setForm({ ...form, unit: u })}
                   style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid', borderColor: form.unit === u ? '#6366F1' : '#E2E8F0', background: form.unit === u ? '#EEF2FF' : '#fff', color: form.unit === u ? '#4338CA' : '#64748B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -148,7 +148,7 @@ export function MaterialList({ materials, loading, saving, onCreate, onUpdate, o
           </div>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600 }}>Satuan</label>
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
               {UNITS.map(u => (
                 <button key={u} onClick={() => setForm({ ...form, unit: u })}
                   style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid', borderColor: form.unit === u ? '#6366F1' : '#E2E8F0', background: form.unit === u ? '#EEF2FF' : '#fff', color: form.unit === u ? '#4338CA' : '#64748B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>

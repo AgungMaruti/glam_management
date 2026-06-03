@@ -45,7 +45,7 @@ export function ProductionList({ productions, page, total, limit, loading, savin
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="flex-between" style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700 }}>Riwayat Produksi</h3>
         <Button variant="primary" size="sm" icon={Zap} onClick={() => { setForm({ variant_id: '', quantity: '', notes: '' }); setPreview([]); setShowModal(true) }}>
           Jalankan Produksi

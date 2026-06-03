@@ -41,7 +41,7 @@ export function RecipeList({ data, materials, loading, saving, onCreate, onRemov
       ) : (
         data.map(v => (
           <div key={v.id} className="card" style={{ marginBottom: 16 }}>
-            <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
+            <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {v.product?.name} — {v.name} ({formatNumber(v.size_ml)} ml)
             </h4>
             {(!v.recipes || v.recipes.length === 0) ? (
