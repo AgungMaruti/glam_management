@@ -322,7 +322,12 @@ export function ProductList(props: ProductListProps) {
       <Modal open={mode === 'payment' && !!selVariant} title={`Reseller Bayar — ${selVariant?.name}`} size="sm" onClose={() => setMode(null)}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ fontSize: 13, color: '#64748B' }}>Pilih distribusi yang dibayar:</p>
-          {distributions
+          {loading && (
+            <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>
+              Memuat distribusi...
+            </p>
+          )}
+          {!loading && distributions
             .filter(d => d.variant_id === selVariant?.id && d.status === 'active')
             .map(d => (
               <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: '1px solid', borderColor: payForm.dist_id === d.id ? '#6366F1' : '#E2E8F0', borderRadius: 8, cursor: 'pointer', background: payForm.dist_id === d.id ? '#EEF2FF' : '#fff' }}>
@@ -334,6 +339,11 @@ export function ProductList(props: ProductListProps) {
                 </div>
               </label>
             ))}
+          {!loading && distributions.filter(d => d.variant_id === selVariant?.id && d.status === 'active').length === 0 && (
+            <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', padding: '20px 0' }}>
+              Tidak ada distribusi aktif untuk varian ini.
+            </p>
+          )}
           {payForm.dist_id && (
             <>
               <div>

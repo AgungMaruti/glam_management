@@ -27,4 +27,15 @@ export const distributionsDb = {
     if (error) throw error
     return data
   },
+
+  async getAll() {
+    const { data, error } = await supabase
+      .from('distributions')
+      .select('*, variant:variants(name, product:products(name)), reseller:resellers(name)')
+      .eq('user_id', await getUserId())
+      .eq('status', 'active')
+      .order('distributed_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
 }
