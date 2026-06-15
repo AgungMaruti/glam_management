@@ -425,7 +425,14 @@ with
     select
       coalesce(sum(quantity), 0) as total_sold,
       coalesce(sum(case when sold_at >= date_trunc('month', now()) then quantity else 0 end), 0) as sold_bulan
-    from sales where user_id = auth.uid()
+    from (
+      select quantity, sold_at from sales where user_id = auth.uid()
+      union all
+      select rp.quantity, rp.paid_at as sold_at
+      from reseller_payments rp
+      join distributions d on d.id = rp.distribution_id
+      where rp.user_id = auth.uid()
+    ) combined
   ),
   piutang as (
     select coalesce(sum(d.quantity * d.price_per_unit), 0) - coalesce(sum(rp.amount), 0) as total_piutang
@@ -488,15 +495,25 @@ group by r.id, r.name
 having coalesce(sum(d.quantity * d.price_per_unit), 0) - coalesce(sum(rp.amount), 0) > 0;
 
 create or replace view v_product_sales as
+with combined_sales as (
+  select variant_id, quantity, total_amount as amount
+  from sales
+  where user_id = auth.uid()
+  union all
+  select d.variant_id, rp.quantity, rp.amount
+  from reseller_payments rp
+  join distributions d on d.id = rp.distribution_id
+  where rp.user_id = auth.uid()
+)
 select
   v.id          as variant_id,
   v.name        as variant_name,
   p.name        as product_name,
   coalesce(sum(s.quantity), 0)    as total_qty,
-  coalesce(sum(s.total_amount), 0) as total_revenue
+  coalesce(sum(s.amount), 0)      as total_revenue
 from variants v
 join products p on p.id = v.product_id
-left join sales s on s.variant_id = v.id
+left join combined_sales s on s.variant_id = v.id
 where v.user_id = auth.uid()
 group by v.id, v.name, p.name
 order by total_revenue desc;
@@ -601,8 +618,24 @@ begin
     'modal_bisnis', coalesce((select nullif(value, '')::numeric from settings where user_id = auth.uid() and key = 'modal_bisnis'), 0),
     'profit_bersih', coalesce((select sum(case when type='income' then amount else -amount end) from cashflow where user_id = auth.uid()), 0) - coalesce((select nullif(value, '')::numeric from settings where user_id = auth.uid() and key = 'modal_bisnis'), 0),
     'roi', case when coalesce((select nullif(value, '')::numeric from settings where user_id = auth.uid() and key = 'modal_bisnis'), 0) > 0 then (coalesce((select sum(case when type='income' then amount else -amount end) from cashflow where user_id = auth.uid()), 0) - coalesce((select nullif(value, '')::numeric from settings where user_id = auth.uid() and key = 'modal_bisnis'), 0)) / coalesce((select nullif(value, '')::numeric from settings where user_id = auth.uid() and key = 'modal_bisnis'), 0) * 100 else 0 end,
-    'total_sold', coalesce((select sum(quantity) from sales where user_id = auth.uid()), 0),
-    'total_sold_bulan', coalesce((select sum(quantity) from sales where user_id = auth.uid() and sold_at >= date_trunc('month', now())), 0),
+    'total_sold', coalesce((
+      select sum(quantity) from (
+        select quantity from sales where user_id = auth.uid()
+        union all
+        select rp.quantity from reseller_payments rp
+        join distributions d on d.id = rp.distribution_id
+        where rp.user_id = auth.uid()
+      ) combined
+    ), 0),
+    'total_sold_bulan', coalesce((
+      select sum(quantity) from (
+        select quantity from sales where user_id = auth.uid() and sold_at >= date_trunc('month', now())
+        union all
+        select rp.quantity from reseller_payments rp
+        join distributions d on d.id = rp.distribution_id
+        where rp.user_id = auth.uid() and rp.paid_at >= date_trunc('month', now())
+      ) combined
+    ), 0),
     'total_piutang', coalesce((select sum(d.quantity * d.price_per_unit) from distributions d where d.user_id = auth.uid()), 0) - coalesce((select sum(rp.amount) from reseller_payments rp where rp.user_id = auth.uid()), 0),
     'critical_stock_count', (select count(*)::int from raw_materials where user_id = auth.uid() and stock <= min_stock),
     'gaji_bulan', coalesce((select sum(amount) from cashflow where user_id = auth.uid() and category = 'Gaji Karyawan' and transaction_date >= date_trunc('month', now())), 0),
@@ -680,9 +713,17 @@ declare
 begin
   select coalesce(sum(total_amount), 0), coalesce(sum(quantity), 0)
   into v_total_penjualan, v_unit_terjual
-  from sales
-  where user_id = auth.uid()
-    and sold_at >= now() - (p_days || ' days')::interval;
+  from (
+    select total_amount, quantity from sales
+    where user_id = auth.uid()
+      and sold_at >= now() - (p_days || ' days')::interval
+    union all
+    select rp.amount, rp.quantity
+    from reseller_payments rp
+    join distributions d on d.id = rp.distribution_id
+    where rp.user_id = auth.uid()
+      and rp.paid_at >= now() - (p_days || ' days')::interval
+  ) combined;
 
   select coalesce(avg(hpp_bahan), 0), coalesce(avg(hpp_full_cost), 0), count(*)
   into v_avg_hpp_bahan, v_avg_hpp_full, v_rad_count
